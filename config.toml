@@ -13,8 +13,9 @@ kick = ["fattypillow", "czechfather", "astatoro", "miken", "czechcloud"]
 twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "oliverovykecy", "rob2628"]
 
 [send]
-# TRMNL limit je 12 webhooků/h. 6 min mezi změnami + 15 min heartbeat = max 10/h.
-min_interval_minutes = 6
+# TRMNL limit je 12 webhooků/h. Sběrač běží každých 5 min; při změně pošle hned (max 12/h),
+# heartbeat po 15 min. Server plugin renderuje nejdřív po 6 min (refresh_interval 360 s, minimum bez TRMNL+).
+min_interval_minutes = 5
 heartbeat_minutes = 15
 
 [trmnl]

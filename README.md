@@ -72,9 +72,10 @@ uv run --with python-liquid preview/render.py --layout full   # local preview â†
 
 ## Rate limits
 
-TRMNL allows 12 pushes per hour (30 with TRMNL+) and a 5 kB payload. The collector runs every 5 minutes but only
-sends when the data changed and at least 6 minutes passed, or as a heartbeat after 15 minutes, so it stays at
-10 pushes/hour at most. The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
+TRMNL allows 12 pushes per hour (30 with TRMNL+) and a 5 kB payload. The collector runs every 5 minutes and
+sends when the data changed (at most 12 pushes/hour) or as a heartbeat after 15 minutes. TRMNL re-renders a
+private plugin no faster than every 6 minutes (`refresh_interval: 360` in settings.yml is the minimum without
+TRMNL+), and the device shows a new image on its own refresh cycle (set to 5 minutes here). The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
 run fails loudly above 4.5 kB.
 
 ## Deploying to a Raspberry Pi

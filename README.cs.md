@@ -59,8 +59,9 @@ uv run --with python-liquid preview/render.py --layout full   # lokální náhle
 
 ## Limity TRMNL
 
-12 odeslání/h (30 s TRMNL+) a 5 kB payload. Sběrač běží každých 5 min, ale pošle jen když se data změnila a od
-posledního odeslání uplynulo ≥ 6 min, nebo jako heartbeat po 15 min → max 10/h. Payload má ~1,1 kB při 12 profilech;
+12 odeslání/h (30 s TRMNL+) a 5 kB payload. Sběrač běží každých 5 min a pošle, když se data změnila (max 12/h),
+nebo jako heartbeat po 15 min. Server plugin přerenderuje nejdřív po 6 min (`refresh_interval: 360` v settings.yml
+je minimum bez TRMNL+) a zařízení si nový obrázek bere ve svém cyklu (nastaveno na 5 min). Payload má ~1,1 kB při 12 profilech;
 nad 4,5 kB se zkrátí názvy kategorií, pak běh selže s chybou.
 
 ## Nasazení na Raspberry Pi
