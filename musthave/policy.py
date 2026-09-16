@@ -1,0 +1,87 @@
+"""Politika serveru pro zařízení: akce (none/partial/full), režim plného refreshe, spánek a interval."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
+from .frames import HEIGHT, WIDTH
+
+
+@dataclass
+class DeviceState:
+    frame_id: str | None = None          # snímek, o kterém víme, že je na panelu (z X-Frame-Id)
+    partials_since_full: int = 0
+    last_full_at: float | None = None    # timestamp posledního plného refreshe
+    last_seen_at: float | None = None
+
+
+@dataclass(frozen=True)
+class PolicyConfig:
+    power: str = "auto"                  # auto | usb | battery
+    usb_voltage_min: float = 4.15
+    interval_usb: int = 60
+    interval_battery: int = 300
+    full_after_partials: int = 12
+    full_every_s: int = 3600
+    night_full_at: str = "04:00"
+    max_partial_area: float = 0.4
+
+
+@dataclass(frozen=True)
+class Decision:
+    action: str          # none | partial | full
+    full_mode: str       # full | fast
+    sleep_mode: str      # deep | light
+    refresh_rate: int
+
+
+def power_mode(voltage: float | None, cfg: PolicyConfig) -> str:
+    if cfg.power in ("usb", "battery"):
+        return cfg.power
+    return "usb" if voltage is not None and voltage >= cfg.usb_voltage_min else "battery"
+
+
+def _night_boundary(now: datetime, hhmm: str) -> float:
+    hour, minute = (int(p) for p in hhmm.split(":"))
+    boundary = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if boundary > now:
+        boundary -= timedelta(days=1)
+    return boundary.timestamp()
+
+
+def decide(
+    state: DeviceState,
+    reported_frame: str | None,
+    latest: str | None,
+    rects_area: int | None,
+    voltage: float | None,
+    now: datetime,
+    cfg: PolicyConfig,
+) -> Decision:
+    mode = power_mode(voltage, cfg)
+    sleep_mode = "light" if mode == "usb" else "deep"
+    full_mode = "fast" if mode == "usb" else "full"
+    interval = cfg.interval_usb if mode == "usb" else cfg.interval_battery
+
+    if latest is None:
+        return Decision("none", full_mode, sleep_mode, 60)
+    if reported_frame == latest:
+        return Decision("none", full_mode, sleep_mode, interval)
+
+    def full() -> Decision:
+        return Decision("full", full_mode, sleep_mode, interval)
+
+    if not reported_frame or state.frame_id != reported_frame or rects_area is None:
+        return full()
+    if state.last_full_at is None:
+        return full()
+    if rects_area > WIDTH * HEIGHT * cfg.max_partial_area:
+        return full()
+    if state.partials_since_full >= cfg.full_after_partials:
+        return full()
+    if now.timestamp() - state.last_full_at >= cfg.full_every_s:
+        return full()
+    if state.last_full_at < _night_boundary(now, cfg.night_full_at):
+        return full()
+    return Decision("partial", full_mode, sleep_mode, interval)
