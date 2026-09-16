@@ -1,0 +1,3 @@
+# jen pro BYOS režim (python3 -m musthave serve); sběrač sám je čistě stdlib
+python-liquid>=2
+pillow>=10

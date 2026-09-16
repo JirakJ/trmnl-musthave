@@ -28,6 +28,10 @@ class Settings:
     user_api_key: str | None
     plugin_setting_id: int | None
     state_path: Path
+    server_port: int = 8080
+    refresh_seconds: int = 300
+    chrome: str | None = None
+    image_format: str = "png"
 
 
 def read_dotenv(path: Path) -> dict[str, str]:
@@ -81,6 +85,7 @@ def load_settings(
             if found:
                 merged[name] = found
     loc, streams, send, trmnl = raw["location"], raw["streams"], raw.get("send", {}), raw.get("trmnl", {})
+    server = raw.get("server", {})
     plugin_setting_id = trmnl.get("plugin_setting_id") or merged.get("TRMNL_PLUGIN_SETTING_ID")
     return Settings(
         location_name=loc["name"],
@@ -95,4 +100,8 @@ def load_settings(
         user_api_key=merged.get("TRMNL_USER_API_KEY") or None,
         plugin_setting_id=int(plugin_setting_id) if plugin_setting_id else None,
         state_path=root / "state" / "last.json",
+        server_port=int(server.get("port", 8080)),
+        refresh_seconds=int(server.get("refresh_seconds", 300)),
+        chrome=server.get("chrome") or None,
+        image_format=server.get("format", "png"),
     )

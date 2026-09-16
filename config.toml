@@ -23,3 +23,12 @@ heartbeat_minutes = 15
 # Spolu s TRMNL_USER_API_KEY (Keychain / prostředí) se data posílají přes autentizované API;
 # alternativa je TRMNL_WEBHOOK_UUID z Webhook URL, pak plugin_setting_id není potřeba.
 plugin_setting_id = 479481
+
+[server]
+# BYOS režim (`python3 -m musthave serve`): zařízení ukazuje na http://<ip-tohoto-stroje>:port
+# (captive portál → Advanced → Custom Server). Obrazovka se renderuje lokálně každých refresh_seconds.
+port = 8080
+refresh_seconds = 300
+# format = "png" (1-bit PNG) nebo "bmp" (1-bit BMP, nejstarší podporovaný formát firmware)
+format = "png"
+# chrome = "/cesta/k/chrome"   # jinak se hledá Google Chrome / Chromium automaticky

@@ -78,6 +78,28 @@ private plugin no faster than every 6 minutes (`refresh_interval: 360` in settin
 TRMNL+), and the device shows a new image on its own refresh cycle (set to 5 minutes here). The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
 run fails loudly above 4.5 kB.
 
+## BYOS mode: 5-minute updates without the TRMNL cloud
+
+TRMNL re-renders a private plugin at most every 15 minutes unless you pay for TRMNL+. To update the screen every
+5 minutes, run the built-in BYOS server instead and point the device at it. The server renders the same Liquid
+template locally (headless Chrome → 1-bit PNG) and serves the three endpoints the firmware expects
+(`/api/setup`, `/api/display`, `/api/log`). If a fetch or render fails, the previous image stays and the device
+does not redraw (the `filename` does not change). The server still pushes data to the TRMNL cloud, so switching
+back is a soft reset away.
+
+```bash
+uv venv .venv && uv pip install -p .venv/bin/python -r requirements-server.txt   # python-liquid + Pillow
+.venv/bin/python -m musthave serve --once     # test render → state/screen/current.png
+deploy/install_server_launchd.sh              # macOS: launchd agent with KeepAlive (replaces the collector agent)
+```
+
+Point the device at the server: hold the button on the back for 5 s, join the `TRMNL` Wi-Fi, in the captive
+portal open **Advanced → Custom Server → Yes**, enter `http://<LAN-IP>:8080` (no trailing slash), then your Wi-Fi
+credentials and Connect. Give the host a fixed LAN IP (DHCP reservation). Back to trmnl.com: pairing mode →
+Advanced → Soft Reset, and clear the server field. `[server]` in `config.toml` sets port, refresh, image format
+(`png` or `bmp`) and an explicit Chrome path. On a Raspberry Pi use `deploy/trmnl-musthave-server.service`
+(`apt install chromium`).
+
 ## Deploying to a Raspberry Pi
 
 ```
@@ -88,10 +110,10 @@ ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ## Layout
 
 ```
-musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run, __main__
+musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run, screen + server + serve (BYOS), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
 preview/    render.py, sample.json (real payload), screenshots
-deploy/     systemd service + timer, install.sh, push_plugin.sh
+deploy/     systemd units + timer, install.sh, push_plugin.sh, launchd plists, BYOS server unit
 tests/      pytest with fixtures captured from the real APIs
 docs/superpowers/  design spec and implementation plan (Czech)
 ```

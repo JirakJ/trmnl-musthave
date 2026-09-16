@@ -64,6 +64,26 @@ nebo jako heartbeat po 15 min. Server plugin přerenderuje nejdřív po 6 min (`
 je minimum bez TRMNL+) a zařízení si nový obrázek bere ve svém cyklu (nastaveno na 5 min). Payload má ~1,1 kB při 12 profilech;
 nad 4,5 kB se zkrátí názvy kategorií, pak běh selže s chybou.
 
+## BYOS režim: aktualizace po 5 minutách bez TRMNL cloudu
+
+TRMNL bez TRMNL+ přerenderuje privátní plugin nejdřív po 15 minutách. Pro aktualizaci každých 5 minut slouží
+vestavěný BYOS server: renderuje stejnou Liquid šablonu lokálně (headless Chrome → 1-bit PNG) a obsluhuje tři
+endpointy, které firmware volá (`/api/setup`, `/api/display`, `/api/log`). Když stažení dat nebo render selže,
+zůstane poslední obrázek a zařízení nic nepřekreslí (`filename` se nezmění). Server dál posílá data i do TRMNL
+cloudu, takže návrat je jen soft reset zařízení.
+
+```bash
+uv venv .venv && uv pip install -p .venv/bin/python -r requirements-server.txt   # python-liquid + Pillow
+.venv/bin/python -m musthave serve --once     # zkušební render → state/screen/current.png
+deploy/install_server_launchd.sh              # macOS: launchd agent s KeepAlive (nahradí agenta sběrače)
+```
+
+Přepnutí zařízení: podržet tlačítko vzadu 5 s, připojit se k Wi-Fi `TRMNL`, v captive portálu **Advanced →
+Custom Server → Yes**, zadat `http://<IP-v-LAN>:8080` (bez lomítka na konci), pak domácí Wi-Fi a Connect. Hostu
+dejte pevnou IP (DHCP rezervace). Návrat na trmnl.com: párovací režim → Advanced → Soft Reset a pole serveru
+vymazat. Sekce `[server]` v `config.toml` nastavuje port, interval, formát (`png`/`bmp`) a cestu k Chrome.
+Na Raspberry Pi slouží `deploy/trmnl-musthave-server.service` (`apt install chromium`).
+
 ## Nasazení na Raspberry Pi
 
 ```
@@ -74,10 +94,10 @@ ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ## Struktura
 
 ```
-musthave/   config, http, weather, kick, twitch, payload, state, trmnl (odesílání), run, __main__
+musthave/   config, http, weather, kick, twitch, payload, state, trmnl (odesílání), run, screen + server + serve (BYOS), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
 preview/    render.py, sample.json (reálný payload), screenshoty
-deploy/     systemd service + timer, install.sh, push_plugin.sh
+deploy/     systemd jednotky + timer, install.sh, push_plugin.sh, launchd plisty, BYOS server unit
 tests/      pytest, fixtures z reálných odpovědí
 docs/superpowers/  spec + implementační plán
 ```

@@ -1,0 +1,17 @@
+[Unit]
+Description=TRMNL Must-have BYOS server (local render + HTTP for the device)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/trmnl-musthave
+EnvironmentFile=-/home/%i/trmnl-musthave/.env
+# venv: uv venv .venv && uv pip install -p .venv/bin/python -r requirements-server.txt ; apt install chromium
+ExecStart=/home/%i/trmnl-musthave/.venv/bin/python -m musthave serve
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

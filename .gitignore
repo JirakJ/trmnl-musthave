@@ -5,3 +5,4 @@ __pycache__/
 .pytest_cache/
 .claude-flow/
 .DS_Store
+.venv/
