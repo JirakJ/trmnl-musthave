@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Mapping
 
+from .policy import PolicyConfig
+
 KEYCHAIN_SERVICE = "trmnl-musthave"
 SECRET_NAMES = ("TRMNL_WEBHOOK_UUID", "TRMNL_USER_API_KEY")
 
@@ -32,6 +34,8 @@ class Settings:
     refresh_seconds: int = 300
     chrome: str | None = None
     image_format: str = "png"
+    policy: PolicyConfig = PolicyConfig()
+    firmware_dir: Path | None = None
 
 
 def read_dotenv(path: Path) -> dict[str, str]:
@@ -104,4 +108,15 @@ def load_settings(
         refresh_seconds=int(server.get("refresh_seconds", 300)),
         chrome=server.get("chrome") or None,
         image_format=server.get("format", "png"),
+        policy=PolicyConfig(
+            power=str(server.get("power", "auto")),
+            usb_voltage_min=float(server.get("usb_voltage_min", 4.15)),
+            interval_usb=int(server.get("interval_usb", 60)),
+            interval_battery=int(server.get("interval_battery", server.get("refresh_seconds", 300))),
+            full_after_partials=int(server.get("full_after_partials", 12)),
+            full_every_s=int(server.get("full_every_minutes", 60)) * 60,
+            night_full_at=str(server.get("night_full_at", "04:00")),
+            max_partial_area=float(server.get("max_partial_area", 0.4)),
+        ),
+        firmware_dir=root / "deploy" / "firmware",
     )

@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="vypsat zařízení z TRMNL účtu")
     serve_p = sub.add_parser("serve", help="BYOS server: lokální render + HTTP pro zařízení")
     serve_p.add_argument("--port", type=int, default=None)
-    serve_p.add_argument("--no-push", action="store_true", help="neposílat data do TRMNL cloudu")
+    serve_p.add_argument("--push", action="store_true", help="posílat data i do TRMNL cloudu (webhook)")
     serve_p.add_argument("--once", action="store_true", help="jeden tick a konec (test renderu)")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "serve":
         from .serve import serve
 
-        return serve(ROOT, port=args.port, push=not args.no_push, once=args.once)
+        return serve(ROOT, port=args.port, push=args.push, once=args.once)
     parser.print_help()
     return 2
 

@@ -84,6 +84,17 @@ dejte pevnou IP (DHCP rezervace). Návrat na trmnl.com: párovací režim → Ad
 vymazat. Sekce `[server]` v `config.toml` nastavuje port, interval, formát (`png`/`bmp`) a cestu k Chrome.
 Na Raspberry Pi slouží `deploy/trmnl-musthave-server.service` (`apt install chromium`).
 
+## Protokol v1 (vlastní firmware)
+
+S forkem [trmnl-musthave-firmware](https://github.com/JirakJ/trmnl-musthave-firmware) zařízení posílá `X-Frame-Id`
+(snímek, který právě ukazuje) a server odpoví `action: none | partial | full`. Pro `partial` servíruje
+`/frames/<id>.regions?from=<old>`: malý binární blob (`MHR1`) s nejvýše 4 změněnými obdélníky, každý se starými
+i novými 1-bit pixely, takže panel překreslí jen tato okna bez bliknutí. Server také určuje `sleep_mode` (light na
+USB, deep na baterii, podle hlášeného napětí), `refresh_rate`, kdy udělat plný refresh proti duchům
+(`full_after_partials`, `full_every_minutes`, `night_full_at`) a nabízí OTA z `deploy/firmware/latest.bin`, když se
+`firmware_version.txt` liší od verze zařízení. Stock firmware proti stejnému serveru dál funguje (jde vždy cestou `full`).
+Detaily: `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
+
 ## Nasazení na Raspberry Pi
 
 ```
@@ -94,7 +105,8 @@ ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ## Struktura
 
 ```
-musthave/   config, http, weather, kick, twitch, payload, state, trmnl (odesílání), run, screen + server + serve (BYOS), __main__
+musthave/   config, http, weather, kick, twitch, payload, state, trmnl (odesílání), run,
+            screen (render) + frames + diff + policy + devices + server + serve (BYOS v1), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
 preview/    render.py, sample.json (reálný payload), screenshoty
 deploy/     systemd jednotky + timer, install.sh, push_plugin.sh, launchd plisty, BYOS server unit

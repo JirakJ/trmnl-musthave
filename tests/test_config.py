@@ -82,3 +82,25 @@ def test_environment_wins_over_secret_lookup(tmp_path):
     write(tmp_path, CONFIG)
     s = load_settings(tmp_path, env={"TRMNL_USER_API_KEY": "env"}, secret_lookup=lambda name: "kc")
     assert s.user_api_key == "env"
+
+
+def test_server_policy_keys(tmp_path):
+    write(tmp_path, CONFIG + """
+[server]
+port = 9000
+power = "usb"
+interval_usb = 45
+full_every_minutes = 30
+night_full_at = "03:30"
+""")
+    s = load_settings(tmp_path, env={}, secret_lookup=None)
+    assert s.server_port == 9000
+    assert s.policy.power == "usb" and s.policy.interval_usb == 45
+    assert s.policy.full_every_s == 1800 and s.policy.night_full_at == "03:30"
+    assert s.policy.interval_battery == 300  # default
+
+
+def test_server_policy_defaults(tmp_path):
+    write(tmp_path, CONFIG)
+    s = load_settings(tmp_path, env={}, secret_lookup=None)
+    assert s.policy.power == "auto" and s.policy.full_after_partials == 12

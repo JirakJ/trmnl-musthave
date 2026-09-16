@@ -28,7 +28,16 @@ plugin_setting_id = 479481
 # BYOS režim (`python3 -m musthave serve`): zařízení ukazuje na http://<ip-tohoto-stroje>:port
 # (captive portál → Advanced → Custom Server). Obrazovka se renderuje lokálně každých refresh_seconds.
 port = 8080
-refresh_seconds = 300
+# Napájení: auto (podle napětí baterie, >= usb_voltage_min = USB) | usb | battery
+power = "auto"
+usb_voltage_min = 4.15
+interval_usb = 60          # s, light sleep na USB
+interval_battery = 300     # s, deep sleep na baterii
+# Plný refresh proti duchům: po N částečných, nejméně 1× za M minut, a při prvním dotazu po night_full_at
+full_after_partials = 12
+full_every_minutes = 60
+night_full_at = "04:00"
+max_partial_area = 0.4     # větší změna než 40 % plochy → plný refresh
 # format = "png" (1-bit PNG) nebo "bmp" (1-bit BMP, nejstarší podporovaný formát firmware)
 format = "png"
 # chrome = "/cesta/k/chrome"   # jinak se hledá Google Chrome / Chromium automaticky

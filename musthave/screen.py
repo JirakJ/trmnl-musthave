@@ -6,9 +6,7 @@ Importy třetích stran jsou líné, aby zbytek balíčku zůstal čistě stdlib
 
 from __future__ import annotations
 
-import hashlib
 import io
-import json
 import logging
 import os
 import shutil
@@ -116,39 +114,3 @@ def render_screen(payload: dict, chrome: str | None = None, fmt: str = "png", la
     """Celý řetězec payload → bytes obrázku pro zařízení."""
     html = build_html(render_markup(payload, layout), layout)
     return to_device_image(screenshot(html, find_chrome(chrome)), fmt)
-
-
-class ScreenStore:
-    """Aktuální obrázek na disku + meta.json s názvem (hash obsahu = cache-breaker pro firmware)."""
-
-    def __init__(self, directory: Path) -> None:
-        self.dir = Path(directory)
-        self.dir.mkdir(parents=True, exist_ok=True)
-        self.meta = self.dir / "meta.json"
-
-    def _read_meta(self) -> dict | None:
-        try:
-            return json.loads(self.meta.read_text(encoding="utf-8"))
-        except (FileNotFoundError, ValueError):
-            return None
-
-    def current(self) -> tuple[str, bytes] | None:
-        meta = self._read_meta()
-        if not meta:
-            return None
-        path = self.dir / meta["file"]
-        if not path.exists():
-            return None
-        return meta["filename"], path.read_bytes()
-
-    def update(self, data: bytes, ext: str = "png") -> str:
-        digest = hashlib.sha256(data).hexdigest()[:10]
-        filename = f"musthave-{digest}.{ext}"
-        file = f"current.{ext}"
-        tmp = self.dir / f".{file}.tmp"
-        tmp.write_bytes(data)
-        os.replace(tmp, self.dir / file)
-        meta_tmp = self.dir / ".meta.json.tmp"
-        meta_tmp.write_text(json.dumps({"filename": filename, "file": file, "bytes": len(data)}), encoding="utf-8")
-        os.replace(meta_tmp, self.meta)
-        return filename

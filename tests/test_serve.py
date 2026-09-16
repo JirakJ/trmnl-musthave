@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from musthave.screen import ScreenStore
+from musthave.frames import FrameStore, png_to_bitmap
 from musthave.serve import tick
 from musthave.state import State
 
@@ -24,8 +24,16 @@ kick = ["astatoro"]
 twitch = ["arcadebulls"]
 [server]
 port = 0
-refresh_seconds = 300
+power = "battery"
 """
+
+
+def png(color: int) -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("1", (800, 480), color).save(buf, format="PNG")
+    return buf.getvalue()
 
 
 class FakeHttp:
@@ -51,46 +59,45 @@ def project(tmp_path):
     (tmp_path / "config.toml").write_text(CONFIG, encoding="utf-8")
 
 
-def test_tick_renders_and_stores_screen(tmp_path):
+def test_tick_renders_and_stores_frame(tmp_path):
     project(tmp_path)
-    store = ScreenStore(tmp_path / "state" / "screen")
+    frames = FrameStore(tmp_path / "state" / "frames")
     calls = []
 
     def renderer(payload):
         calls.append(payload)
-        return b"IMG-" + payload["updated"].encode()
+        return png(1)
 
-    ok = tick(tmp_path, store, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=renderer, push=False)
+    ok = tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=renderer, push=False)
     assert ok is True
     assert calls[0]["kick"]["items"][0]["n"] == "Astatoro"
-    name, data = store.current()
-    assert data == b"IMG-17:20" and name.endswith(".png")
+    assert frames.latest() is not None and frames.get(frames.latest()) == png_to_bitmap(png(1))
 
 
-def test_tick_keeps_last_screen_when_render_fails(tmp_path):
+def test_tick_keeps_last_frame_when_render_fails(tmp_path):
     project(tmp_path)
-    store = ScreenStore(tmp_path / "state" / "screen")
-    store.update(b"OLD", ext="png")
+    frames = FrameStore(tmp_path / "state" / "frames")
+    old = frames.put(png_to_bitmap(png(0)))
 
     def broken(payload):
         raise RuntimeError("chrome missing")
 
-    ok = tick(tmp_path, store, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=broken, push=False)
+    ok = tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=broken, push=False)
     assert ok is False
-    assert store.current()[1] == b"OLD"
+    assert frames.latest() == old
 
 
 def test_tick_pushes_to_trmnl_when_enabled(tmp_path):
     project(tmp_path)
-    store = ScreenStore(tmp_path / "state" / "screen")
+    frames = FrameStore(tmp_path / "state" / "frames")
     http = FakeHttp()
-    tick(tmp_path, store, http=http, env={"TRMNL_WEBHOOK_UUID": "u-1"}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: b"X", push=True)
+    tick(tmp_path, frames, http=http, env={"TRMNL_WEBHOOK_UUID": "u-1"}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: png(1), push=True)
     assert [p for p in http.posts if "custom_plugins/u-1" in p[0]]
 
 
 def test_tick_without_push_never_calls_trmnl(tmp_path):
     project(tmp_path)
-    store = ScreenStore(tmp_path / "state" / "screen")
+    frames = FrameStore(tmp_path / "state" / "frames")
     http = FakeHttp()
-    tick(tmp_path, store, http=http, env={"TRMNL_WEBHOOK_UUID": "u-1"}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: b"X", push=False)
+    tick(tmp_path, frames, http=http, env={"TRMNL_WEBHOOK_UUID": "u-1"}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: png(1), push=False)
     assert not [p for p in http.posts if "trmnl.com" in p[0]]

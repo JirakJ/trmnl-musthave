@@ -100,6 +100,17 @@ Advanced → Soft Reset, and clear the server field. `[server]` in `config.toml`
 (`png` or `bmp`) and an explicit Chrome path. On a Raspberry Pi use `deploy/trmnl-musthave-server.service`
 (`apt install chromium`).
 
+## Protocol v1 (custom firmware)
+
+With the [trmnl-musthave-firmware](https://github.com/JirakJ/trmnl-musthave-firmware) fork the device sends
+`X-Frame-Id` (the frame it currently shows) and the server answers with `action: none | partial | full`. For
+`partial` it serves `/frames/<id>.regions?from=<old>`: a small binary blob (`MHR1`) with up to 4 changed rectangles,
+each carrying the old and new 1-bit pixels, so the panel refreshes only those windows without flashing. The server
+also decides `sleep_mode` (light on USB, deep on battery, from the reported voltage), `refresh_rate`, when to do a
+full refresh against ghosting (`full_after_partials`, `full_every_minutes`, `night_full_at`) and offers OTA from
+`deploy/firmware/latest.bin` when `firmware_version.txt` differs from the device's version. Stock firmware keeps
+working against the same server (it always takes the `full` path). See `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
+
 ## Deploying to a Raspberry Pi
 
 ```
@@ -110,7 +121,8 @@ ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ## Layout
 
 ```
-musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run, screen + server + serve (BYOS), __main__
+musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run,
+            screen (render) + frames + diff + policy + devices + server + serve (BYOS v1), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
 preview/    render.py, sample.json (real payload), screenshots
 deploy/     systemd units + timer, install.sh, push_plugin.sh, launchd plists, BYOS server unit
