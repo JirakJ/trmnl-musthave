@@ -102,6 +102,8 @@ def make_server(
             state = devices.get(mac)
             state.frame_id = reported if reported and frames.get(reported) is not None else None
             state.last_seen_at = now.timestamp()
+            if fw:
+                state.fw_version = fw
             latest = frames.latest()
 
             rects_area = None

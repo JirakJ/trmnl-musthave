@@ -32,7 +32,7 @@ def env(tmp_path):
     fw_dir = tmp_path / "firmware"
     fw_dir.mkdir()
     clock = {"now": datetime(2026, 9, 16, 21, 0)}
-    srv = make_server(frames, devices, PolicyConfig(power="battery"), port=0, firmware_dir=fw_dir, clock=lambda: clock["now"])
+    srv = make_server(frames, devices, PolicyConfig(power="battery", align_minutes=0), port=0, firmware_dir=fw_dir, clock=lambda: clock["now"])
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield {"base": f"http://127.0.0.1:{srv.server_port}", "frames": frames, "devices": devices, "fw": fw_dir, "clock": clock}
     srv.shutdown()
@@ -114,7 +114,7 @@ def test_ota_offered_when_version_differs(env):
 def test_usb_voltage_switches_to_light_sleep(tmp_path):
     frames = FrameStore(tmp_path / "frames")
     frames.put(WHITE)
-    srv = make_server(frames, DeviceRegistry(tmp_path / "d.json"), PolicyConfig(), port=0)
+    srv = make_server(frames, DeviceRegistry(tmp_path / "d.json"), PolicyConfig(align_minutes=0), port=0)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
         d = json.loads(get(f"http://127.0.0.1:{srv.server_port}/api/display", {"ID": MAC, "Battery-Voltage": "4.2"})[2])

@@ -36,7 +36,7 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
 
   <div class="mh-head">
     <span class="mh-head-title">MUST-HAVE</span>
-    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}</span>
+    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw != "" %} · FW {{ fw }}{% endif %}</span>
   </div>
 
   <div class="mh-weather">

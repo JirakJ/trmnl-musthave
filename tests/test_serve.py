@@ -119,3 +119,16 @@ def test_tick_does_not_rerender_when_data_unchanged(tmp_path):
     assert ok is True
     assert calls == ["17:20"]            # druhý tick nerenderoval
     assert frames.latest() == first
+
+
+def test_tick_puts_last_seen_firmware_version_into_payload(tmp_path):
+    from musthave.devices import DeviceRegistry
+    from musthave.policy import DeviceState
+
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames")
+    reg = DeviceRegistry(tmp_path / "state" / "devices.json")
+    reg.save("AA:BB", DeviceState(frame_id=None, last_seen_at=1.0, fw_version="2.0.2"))
+    seen = {}
+    tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: seen.update(p) or png(1), push=False)
+    assert seen["fw"] == "2.0.2"

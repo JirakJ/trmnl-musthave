@@ -21,7 +21,7 @@ class DeviceRegistry:
 
     def get(self, mac: str) -> DeviceState:
         raw = self._data.get(mac) or {}
-        return DeviceState(**{k: raw.get(k) for k in ("frame_id", "last_full_at", "last_seen_at")},
+        return DeviceState(**{k: raw.get(k) for k in ("frame_id", "last_full_at", "last_seen_at", "fw_version")},
                            partials_since_full=int(raw.get("partials_since_full") or 0))
 
     def save(self, mac: str, state: DeviceState) -> None:
@@ -30,3 +30,11 @@ class DeviceRegistry:
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
         os.replace(tmp, self.path)
+
+    def latest_seen(self) -> DeviceState | None:
+        best = None
+        for mac in self._data:
+            st = self.get(mac)
+            if st.last_seen_at and (best is None or st.last_seen_at > best.last_seen_at):
+                best = st
+        return best

@@ -6,3 +6,4 @@ __pycache__/
 .claude-flow/
 .DS_Store
 .venv/
+deploy/firmware/*.bin

@@ -75,6 +75,8 @@ def tick(
 
     # Stejná data → stejný snímek. Čas "aktualizováno" sám o sobě změnu nedělá, jinak by zařízení
     # překreslovalo každou minutu jen kvůli hodinám v hlavičce.
+    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
+    payload["fw"] = seen.fw_version if seen and seen.fw_version else ""
     rendered_path = frames.dir / "last_payload.json"
     comparable = {k: v for k, v in payload.items() if k != "updated"}
     try:

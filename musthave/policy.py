@@ -14,6 +14,7 @@ class DeviceState:
     partials_since_full: int = 0
     last_full_at: float | None = None    # timestamp posledního plného refreshe
     last_seen_at: float | None = None
+    fw_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,8 @@ class PolicyConfig:
     full_every_s: int = 3600
     night_full_at: str = "04:00"
     max_partial_area: float = 0.4
+    align_minutes: int = 5              # 0 = vypnuto; jinak probouzet v násobcích N minut (:00, :05, …)
+    align_lead_s: int = 10              # předstih na probuzení + Wi-Fi, aby obrazovka byla hotová na hranici
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,17 @@ def _night_boundary(now: datetime, hhmm: str) -> float:
     return boundary.timestamp()
 
 
+def seconds_to_next_slot(now: datetime, cfg: PolicyConfig) -> int:
+    """Sekundy do (příští N-minutová hranice − předstih). Když by vyšlo < 20 s, vezme se další slot."""
+    slot = cfg.align_minutes * 60
+    epoch = int(now.timestamp())
+    nxt = (epoch // slot + 1) * slot
+    wait = nxt - epoch - cfg.align_lead_s
+    if wait < 20:
+        wait += slot
+    return wait
+
+
 def decide(
     state: DeviceState,
     reported_frame: str | None,
@@ -63,6 +77,8 @@ def decide(
     sleep_mode = "light" if mode == "usb" else "deep"
     full_mode = "fast" if mode == "usb" else "full"
     interval = cfg.interval_usb if mode == "usb" else cfg.interval_battery
+    if cfg.align_minutes > 0:
+        interval = seconds_to_next_slot(now, cfg)
 
     if latest is None:
         return Decision("none", full_mode, sleep_mode, 60)

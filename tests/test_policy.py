@@ -4,7 +4,7 @@ from datetime import datetime
 
 from musthave.policy import DeviceState, PolicyConfig, decide, power_mode
 
-CFG = PolicyConfig()
+CFG = PolicyConfig(align_minutes=0)  # klasické intervaly; zarovnání má vlastní testy
 NOW = datetime(2026, 9, 16, 21, 0)
 
 
@@ -69,3 +69,28 @@ def test_first_request_after_night_time_is_full():
 def test_never_did_full_yet_forces_full():
     st = DeviceState(frame_id="f0")
     assert decide(st, "f0", "f1", 64, 3.9, NOW, CFG).action == "full"
+
+
+def test_refresh_rate_aligns_to_next_5_minute_boundary_with_lead():
+    from musthave.policy import seconds_to_next_slot
+
+    cfg = PolicyConfig(align_minutes=5, align_lead_s=10)
+    # 21:02:30 → příští hranice 21:05:00, minus 10 s předstih = 140 s
+    assert seconds_to_next_slot(datetime(2026, 9, 16, 21, 2, 30), cfg) == 140
+    # těsně před hranicí (21:04:55) by vyšlo −5 s → přeskočit na další slot 21:10:00 − 10 s = 295 s
+    assert seconds_to_next_slot(datetime(2026, 9, 16, 21, 4, 55), cfg) == 295
+    # přesně na hranici 21:05:00 → další slot 21:10:00 − 10 s = 290 s
+    assert seconds_to_next_slot(datetime(2026, 9, 16, 21, 5, 0), cfg) == 290
+
+
+def test_decide_uses_aligned_refresh_rate_when_enabled():
+    cfg = PolicyConfig(power="usb", align_minutes=5, align_lead_s=10)
+    st = DeviceState(frame_id="f0", last_full_at=NOW.timestamp() - 60)
+    d = decide(st, "f0", "f0", None, 4.8, datetime(2026, 9, 16, 21, 2, 30), cfg)
+    assert d.action == "none" and d.refresh_rate == 140
+
+
+def test_align_disabled_keeps_interval():
+    cfg = PolicyConfig(power="usb", align_minutes=0)
+    d = decide(DeviceState(), None, None, None, 4.8, NOW, cfg)
+    assert d.refresh_rate == 60

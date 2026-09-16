@@ -117,6 +117,8 @@ def load_settings(
             full_every_s=int(server.get("full_every_minutes", 60)) * 60,
             night_full_at=str(server.get("night_full_at", "04:00")),
             max_partial_area=float(server.get("max_partial_area", 0.4)),
+            align_minutes=int(server.get("align_minutes", 5)),
+            align_lead_s=int(server.get("align_lead_seconds", 10)),
         ),
         firmware_dir=root / "deploy" / "firmware",
     )
