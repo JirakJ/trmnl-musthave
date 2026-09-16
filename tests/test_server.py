@@ -150,3 +150,9 @@ def test_ota_wait_mode_polls_fast_and_offers_update(env, tmp_path):
     assert d["ota_wait"] is True and d["update_firmware"] is True
     d = display(env, fw="2.0.5")                                 # zařízení už hlásí novou verzi → režim se sám vypne
     assert d["ota_wait"] is False and not (env["fw"] / "ota_wait").exists()
+
+
+def test_requests_without_access_token_are_not_registered(env):
+    env["frames"].put(WHITE)
+    get(env["base"] + "/api/display", {"ID": "FA:KE:00:00:00:01", "FW-Version": "9.9.9"})
+    assert env["devices"].get("FA:KE:00:00:00:01").fw_version is None

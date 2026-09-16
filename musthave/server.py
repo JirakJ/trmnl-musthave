@@ -119,7 +119,8 @@ def make_server(
             elif d.action == "full":
                 state.partials_since_full = 0
                 state.last_full_at = now.timestamp()
-            devices.save(mac, state)
+            if self.headers.get("Access-Token"):  # jen skutečný firmware; ruční curl testy registr neplní
+                devices.save(mac, state)
 
             base = self._base()
             target_version = firmware_version()
