@@ -1,0 +1,45 @@
+{% comment %} TRMNL Must-have – half horizontal (800x240): počasí vlevo, live streamy vpravo {% endcomment %}
+<style>
+  .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+  .mh-wrap { display: flex; align-items: center; gap: 16px; width: 100%; min-width: 0; }
+  .mh-weather-main { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; }
+  .mh-days { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, auto); gap: 8px; }
+  .mh-day { text-align: center; white-space: nowrap; }
+  .mh-day .mh-temps { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mh-live { flex: 1 1 0; min-width: 300px; border-left: 2px solid #000; padding-left: 12px; }
+  .mh-live-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-live-head { font-size: 11px; font-weight: 700; letter-spacing: .08em; margin-bottom: 2px; }
+  .mh-chip { display: inline-block; margin: 0 4px 3px 0; padding: 0 5px; border: 1.5px solid #000; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .mh-chip b { background: #000; color: #fff; padding: 0 4px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+</style>
+<div class="layout mh">
+  <div class="mh-wrap">
+    <div class="mh-weather-main">
+      <span class="value value--large value--tnums">{% if weather.ok %}{{ weather.temp | round }}°{% else %}—{% endif %}</span>
+      <div class="flex flex--col">
+        <span class="title title--small">{% if weather.ok %}{{ weather.label }}{% else %}Počasí nedostupné{% endif %}</span>
+        {% if weather.ok %}<span class="description">{{ weather.hum }} % · {{ weather.wind }} km/h</span>{% endif %}
+      </div>
+    </div>
+    <div class="mh-days">
+      {% for day in weather.days %}
+      <div class="mh-day">
+        <span class="label label--small">{{ day.d }}</span>
+        <div class="mh-temps">{{ day.hi }}°/{{ day.lo }}°</div>
+        <span class="description">{{ day.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mh-live">
+      <div class="mh-live-head">KICK · {{ kick.live }} LIVE</div>
+      <div class="mh-live-line">{% for item in kick.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if kick.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
+      <div class="mh-live-head" style="margin-top:6px">TWITCH · {{ twitch.live }} LIVE</div>
+      <div class="mh-live-line">{% for item in twitch.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if twitch.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Must-have</span>
+  <span class="instance">Jihlava · {{ updated }}</span>
+</div>

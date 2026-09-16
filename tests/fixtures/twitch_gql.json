@@ -1,0 +1,83 @@
+[
+ {
+  "data": {
+   "users": [
+    {
+     "login": "arcadebulls",
+     "displayName": "ArcadeBulls",
+     "stream": {
+      "title": "🔴 Poslední den před novou závislostí...",
+      "viewersCount": 573,
+      "createdAt": "2026-09-16T14:01:01Z",
+      "game": {
+       "displayName": "Just Chatting"
+      }
+     }
+    },
+    {
+     "login": "agraelus",
+     "displayName": "Agraelus",
+     "stream": null
+    },
+    {
+     "login": "artemis",
+     "displayName": "Artemis",
+     "stream": null
+    },
+    {
+     "login": "cruelladk",
+     "displayName": "Cruelladk",
+     "stream": {
+      "title": "[!Drops Blizzcon] Raid viewers HM 14h - Beta WoW Forever demain | !holy",
+      "viewersCount": 743,
+      "createdAt": "2026-09-16T12:57:13Z",
+      "game": {
+       "displayName": "World of Warcraft"
+      }
+     }
+    },
+    {
+     "login": "conducteir77",
+     "displayName": "Conducteir77",
+     "stream": {
+      "title": "🔥 GRATISCON DEN 5. Jedeme do šestého dne! !discord | !ig | !yt | !youtube | !merch",
+      "viewersCount": 478,
+      "createdAt": "2026-09-14T22:15:36Z",
+      "game": {
+       "displayName": "WARDOGS"
+      }
+     }
+    },
+    {
+     "login": "oliverovykecy",
+     "displayName": "OliverovyKecy",
+     "stream": {
+      "title": "🙏 OMLUVOBRANÍ FILIPA TURKA • 🇪🇺 BABIŠ V KLEŠTÍCH EU • 🎸 ED SHEERAN ZLOBIL • 👁️ SLEDUJÍ NÁS KAMERY?! & LOGI PLAY DAYS JSOU TU!",
+      "viewersCount": 129,
+      "createdAt": "2026-09-16T12:59:54Z",
+      "game": {
+       "displayName": "Just Chatting"
+      }
+     }
+    },
+    {
+     "login": "rob2628",
+     "displayName": "Rob2628",
+     "stream": {
+      "title": "!DROPS+SUB GIFT ON P170+ WLOCK !BUILD  !FAQ !RESTART !Tierlist !Starter !Leveling !Amazon !6Weapons !Factor !Secretlab !Holy",
+      "viewersCount": 5109,
+      "createdAt": "2026-09-15T13:36:36Z",
+      "game": {
+       "displayName": "Diablo IV"
+      }
+     }
+    },
+    null
+   ]
+  },
+  "extensions": {
+   "durationMilliseconds": 64,
+   "requestID": "01M2NDW48KYHX1ZA99QAX6E4W5"
+  }
+ }
+]

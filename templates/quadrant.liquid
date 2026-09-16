@@ -1,0 +1,30 @@
+{% comment %} TRMNL Must-have – quadrant (400x240): teplota + kdo je live {% endcomment %}
+<style>
+  .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+  .mh-wrap { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+  .mh-weather-main { flex: 0 0 auto; text-align: center; }
+  .mh-weather-main .value { line-height: 1; }
+  .mh-live { flex: 1 1 auto; min-width: 0; overflow: hidden; border-left: 2px solid #000; padding-left: 10px; }
+  .mh-live-head { font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+  .mh-names { font-size: 12px; font-weight: 600; line-height: 1.35; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+<div class="layout mh">
+  <div class="mh-wrap">
+    <div class="mh-weather-main">
+      <div class="value value--large value--tnums">{% if weather.ok %}{{ weather.temp | round }}°{% else %}—{% endif %}</div>
+      <div class="description">{% if weather.ok %}{{ weather.label }}{% else %}nedostupné{% endif %}</div>
+      {% if weather.days.size > 1 %}<div class="description">{{ weather.days[1].d }} {{ weather.days[1].hi }}°/{{ weather.days[1].lo }}°</div>{% endif %}
+    </div>
+    <div class="mh-live">
+      <div class="mh-live-head">KICK · {{ kick.live }} LIVE</div>
+      <div class="mh-names">{% assign first = true %}{% for item in kick.items %}{% if item.live %}{% unless first %} · {% endunless %}{{ item.n }}{% assign first = false %}{% endif %}{% endfor %}{% if kick.live == 0 %}<span class="description">nikdo</span>{% endif %}</div>
+      <div class="mh-live-head">TWITCH · {{ twitch.live }} LIVE</div>
+      <div class="mh-names">{% assign first = true %}{% for item in twitch.items %}{% if item.live %}{% unless first %} · {% endunless %}{{ item.n }}{% assign first = false %}{% endif %}{% endfor %}{% if twitch.live == 0 %}<span class="description">nikdo</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Must-have</span>
+  <span class="instance">{{ updated }}</span>
+</div>

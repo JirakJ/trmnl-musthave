@@ -1,0 +1,7 @@
+.env
+state/
+preview/out.html
+__pycache__/
+.pytest_cache/
+.claude-flow/
+.DS_Store

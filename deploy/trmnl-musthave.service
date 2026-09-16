@@ -1,0 +1,12 @@
+[Unit]
+Description=TRMNL Must-have collector (weather + Kick/Twitch status -> TRMNL webhook)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=%i
+WorkingDirectory=/home/%i/trmnl-musthave
+EnvironmentFile=/home/%i/trmnl-musthave/.env
+ExecStart=/usr/bin/python3 -m musthave run
+TimeoutStartSec=120

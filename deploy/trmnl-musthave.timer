@@ -1,0 +1,11 @@
+[Unit]
+Description=Run TRMNL Must-have collector every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+Unit=trmnl-musthave@%i.service
+
+[Install]
+WantedBy=timers.target

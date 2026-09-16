@@ -1,0 +1,18 @@
+# TRMNL Must-have – konfigurace (bez tajemství, tajemství patří do .env)
+
+[location]
+name = "Jihlava"
+latitude = 49.3961
+longitude = 15.5912
+timezone = "Europe/Prague"
+
+[streams]
+# Kick slugs (část URL za kick.com/)
+kick = ["fattypillow", "czechfather", "astatoro", "miken", "czechcloud"]
+# Twitch loginy (část URL za twitch.tv/)
+twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "oliverovykecy", "rob2628"]
+
+[send]
+# TRMNL limit je 12 webhooků/h. 6 min mezi změnami + 15 min heartbeat = max 10/h.
+min_interval_minutes = 6
+heartbeat_minutes = 15
