@@ -1,0 +1,108 @@
+{% comment %}
+TRMNL Must-have – full layout (800x480, 1-bit)
+Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}]},
+          kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}
+{% endcomment %}
+<style>
+  .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+  .mh .columns { align-items: flex-start; }
+  .mh .column { overflow: hidden; }
+  .mh-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #000; min-height: 30px; }
+  .mh-row:last-child { border-bottom: none; }
+  .mh-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+  .mh-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-game { font-size: 11px; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-viewers { flex: 0 0 auto; font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; font-size: 14px; font-weight: 600; }
+  .mh-off { min-height: 22px; padding: 1px 0; }
+  .mh-off .mh-name { font-weight: 400; font-size: 13px; color: #555; }
+  .mh-badge { flex: 0 0 auto; display: inline-block; min-width: 40px; text-align: center; padding: 1px 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; border: 1.5px solid #000; }
+  .mh-badge--live { background: #000; color: #fff; }
+  .mh-badge--off { color: #555; border-color: #555; }
+  .mh-weather { display: flex; align-items: center; gap: 28px; }
+  .mh-weather-main { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; }
+  .mh-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mh-day { text-align: center; white-space: nowrap; }
+  .mh-day .mh-temps { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
+</style>
+
+<div class="layout layout--col gap--small mh">
+
+  <div class="mh-weather">
+    <div class="mh-weather-main">
+      {% if weather.ok %}
+      <span class="value value--xxlarge value--tnums">{{ weather.temp | round }}°</span>
+      <div class="flex flex--col">
+        <span class="title">{{ weather.label }}</span>
+        <span class="description">Pocitově {{ weather.feels | round }}° · Vlhkost {{ weather.hum }} % · Vítr {{ weather.wind }} km/h</span>
+      </div>
+      {% else %}
+      <span class="value value--xxlarge">—</span>
+      <div class="flex flex--col">
+        <span class="title">Počasí nedostupné</span>
+        <span class="description">Open-Meteo neodpovídá</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="mh-days w--full">
+      {% for day in weather.days %}
+      <div class="mh-day">
+        <span class="label label--small">{{ day.d }}</span>
+        <div class="mh-temps">{{ day.hi }}° / {{ day.lo }}°</div>
+        <span class="description">{{ day.label }}{% if day.p > 20 %} · {{ day.p }} %{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="columns gap--large">
+    <div class="column">
+      <div class="mh-col-head">
+        <span class="title title--small">KICK</span>
+        <span class="label label--small">{{ kick.live }} live</span>
+      </div>
+      {% if kick.ok %}
+        {% for item in kick.items %}
+        <div class="mh-row {% unless item.live %}mh-off{% endunless %}">
+          <div class="mh-who">
+            <span class="mh-name">{{ item.n }}</span>
+            {% if item.live %}<span class="mh-game">{{ item.g | default: "Stream" }}{% if item.s %} · od {{ item.s }}{% endif %}</span>{% endif %}
+          </div>
+          <span class="mh-viewers">{% if item.live %}{{ item.v }}{% endif %}</span>
+          {% if item.live %}<span class="mh-badge mh-badge--live">LIVE</span>{% else %}<span class="mh-badge mh-badge--off">off</span>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <span class="description">Kick nedostupný</span>
+      {% endif %}
+    </div>
+
+    <div class="column">
+      <div class="mh-col-head">
+        <span class="title title--small">TWITCH</span>
+        <span class="label label--small">{{ twitch.live }} live</span>
+      </div>
+      {% if twitch.ok %}
+        {% for item in twitch.items %}
+        <div class="mh-row {% unless item.live %}mh-off{% endunless %}">
+          <div class="mh-who">
+            <span class="mh-name">{{ item.n }}</span>
+            {% if item.live %}<span class="mh-game">{{ item.g | default: "Stream" }}{% if item.s %} · od {{ item.s }}{% endif %}</span>{% endif %}
+          </div>
+          <span class="mh-viewers">{% if item.live %}{{ item.v }}{% endif %}</span>
+          {% if item.live %}<span class="mh-badge mh-badge--live">LIVE</span>{% else %}<span class="mh-badge mh-badge--off">off</span>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <span class="description">Twitch nedostupný</span>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<div class="title_bar">
+  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Must-have</span>
+  <span class="instance">Jihlava · aktualizováno {{ updated }}</span>
+</div>

@@ -1,0 +1,122 @@
+{
+ "updated": "17:41",
+ "weather": {
+  "ok": true,
+  "temp": 22.6,
+  "feels": 22.0,
+  "hum": 60,
+  "wind": 14,
+  "code": 3,
+  "label": "Zataženo",
+  "days": [
+   {
+    "d": "St",
+    "hi": 24,
+    "lo": 10,
+    "p": 100,
+    "code": 96,
+    "label": "Bouřka"
+   },
+   {
+    "d": "Čt",
+    "hi": 19,
+    "lo": 12,
+    "p": 100,
+    "code": 80,
+    "label": "Přeháňky"
+   },
+   {
+    "d": "Pá",
+    "hi": 20,
+    "lo": 8,
+    "p": 3,
+    "code": 3,
+    "label": "Zataženo"
+   }
+  ]
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1387,
+    "g": "Valheim",
+    "s": "14:17"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 1340,
+    "g": "Valheim",
+    "s": "14:08"
+   },
+   {
+    "n": "CzechCloud",
+    "live": true,
+    "v": 1047,
+    "g": "Politics",
+    "s": "16:05"
+   },
+   {
+    "n": "FATTYPILLOW",
+    "live": false
+   },
+   {
+    "n": "CzechFather",
+    "live": false
+   }
+  ],
+  "live": 3
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 5171,
+    "g": "Diablo IV",
+    "s": "15:36"
+   },
+   {
+    "n": "Cruelladk",
+    "live": true,
+    "v": 759,
+    "g": "World of Warcraft",
+    "s": "14:57"
+   },
+   {
+    "n": "ArcadeBulls",
+    "live": true,
+    "v": 580,
+    "g": "Just Chatting",
+    "s": "16:01"
+   },
+   {
+    "n": "Conducteir77",
+    "live": true,
+    "v": 473,
+    "g": "WARDOGS",
+    "s": "00:15"
+   },
+   {
+    "n": "OliverovyKecy",
+    "live": true,
+    "v": 129,
+    "g": "Just Chatting",
+    "s": "14:59"
+   },
+   {
+    "n": "Agraelus",
+    "live": false
+   },
+   {
+    "n": "Artemis",
+    "live": false
+   }
+  ],
+  "live": 5
+ }
+}
