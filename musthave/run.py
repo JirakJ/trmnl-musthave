@@ -18,20 +18,23 @@ from .payload import PayloadTooLarge, build_payload, encode
 from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
-from .weather import fetch_weather
+from .weather import fetch_weather, with_fallback
 
 log = logging.getLogger("musthave")
 
 
-def collect(http, settings: Settings, now: datetime) -> dict:
-    """Paralelně stáhne všechny zdroje a poskládá payload. Twitch Client-ID se při 400 obnoví za běhu."""
+def collect(http, settings: Settings, now: datetime, last_weather: dict | None = None) -> tuple[dict, dict | None]:
+    """Paralelně stáhne všechny zdroje a poskládá payload. Vrací (payload, záznam posledního dobrého počasí).
+
+    Twitch Client-ID se při 400 obnoví za běhu; při výpadku Open-Meteo se použije poslední dobré počasí (≤ 3 h)."""
     with ThreadPoolExecutor(max_workers=3) as pool:
         weather_f = pool.submit(fetch_weather, http, settings, now)
         kick_f = pool.submit(fetch_kick, http, settings.kick)
         twitch_f = pool.submit(fetch_twitch, http, settings.twitch, DEFAULT_CLIENT_ID)
         weather, kick = weather_f.result(), kick_f.result()
         twitch, _ = twitch_f.result()
-    return build_payload(weather, kick, twitch, now)
+    weather, remembered = with_fallback(weather, last_weather, now.timestamp())
+    return build_payload(weather, kick, twitch, now), remembered
 
 
 def run(
@@ -58,7 +61,7 @@ def run(
         return 2
 
     try:
-        payload = collect(http, settings, now)
+        payload, last_weather = collect(http, settings, now, state.last_weather)
     except PayloadTooLarge as err:
         print(f"payload too large: {err}", file=sys.stderr)
         return 1
@@ -73,6 +76,8 @@ def run(
     send, reason = should_send(state, payload, now.timestamp(), settings.min_interval_s, settings.heartbeat_s)
     if not send:
         log.info("skip (%s)", reason)
+        if last_weather != state.last_weather:
+            save_state(settings.state_path, State(state.last_sent_at, state.last_payload, last_weather))
         return 0
 
     if can_webhook:
@@ -85,6 +90,6 @@ def run(
     if status >= 400:
         log.error("webhook failed %s: %s", status, text[:200])
         return 1
-    save_state(settings.state_path, State(last_sent_at=now.timestamp(), last_payload=payload))
+    save_state(settings.state_path, State(last_sent_at=now.timestamp(), last_payload=payload, last_weather=last_weather))
     log.info("sent (%s) %d B", reason, size)
     return 0

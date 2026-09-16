@@ -89,3 +89,17 @@ def fetch_weather(http, settings: Settings, now: datetime) -> dict:
     except Exception as err:  # noqa: BLE001 - jeden zdroj nesmí shodit celý běh
         log.warning("weather failed: %s", err)
         return {"ok": False}
+
+
+STALE_MAX_S = 3 * 3600
+
+
+def with_fallback(weather: dict, last_weather: dict | None, now_ts: float) -> tuple[dict, dict | None]:
+    """Když aktuální fetch selhal, vrátí poslední dobré počasí (do 3 h) označené "stale".
+
+    Vrací (počasí k zobrazení, záznam k uložení do state)."""
+    if weather.get("ok"):
+        return weather, {"ts": now_ts, "weather": weather}
+    if last_weather and now_ts - float(last_weather.get("ts", 0)) <= STALE_MAX_S and last_weather.get("weather", {}).get("ok"):
+        return {**last_weather["weather"], "stale": True}, last_weather
+    return weather, last_weather
