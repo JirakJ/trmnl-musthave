@@ -97,9 +97,14 @@ magic "MHR1" | u8 count | count × { u16 x, u16 y, u16 w, u16 h, old[h·w/8], ne
 | `platformio.ini` | `[env:trmnl_musthave] extends = env:trmnl`, `-D MUSTHAVE_FW`, verze `2.0.x` |
 | odstraněno | TRMNL X / gen2 / barevné panely, marketplace special functions, gas gauge (jen OG) |
 
-Spike před implementací regionů (M3): na reálném zařízení ověřit, že `bb_epaper` na EP75 umí okno + částečný refresh
-s dodaným starým plánem po probuzení z deep sleep (bez duchů). Když ne, implementovat přímé UC8179 sekvence
-(knihovna dává `writeCmd`/`writeData`).
+Nález v `bb_epaper` 2.1.9 (`bb_ep.inl`): `bbepSetAddrWindow` pošle PTIN + PTL, ale poslední bajt PTL je natvrdo
+`1` = „refresh celého panelu", a `bbepRefresh` pro UC81xx před DRF vždy pošle PTOU (partial out). Knihovna tedy okno
+používá jen pro zápis dat, ne pro refresh. Oknový refresh proto bude vlastní sekvence v `regions.cpp`:
+`PTIN (0x91)` → `PTL (0x90)` s x0,x1,y0,y1 a módem `0` → `DTM1 (0x10)` starý plán okna → `DTM2 (0x13)` nový plán okna
+→ partial LUT init (převzatá `epd75_init_sequence_partial`, Apache-2.0) → `DRF (0x12)` → busy wait → `PTOU (0x92)`.
+Zápis přes veřejné `bbep.writeCmd()/writeData()`. Spike (M3) ověří na zařízení: (a) bez duchů po deep sleep se starým
+plánem ze serveru, (b) čas refreshe okna vs. celku, (c) chování EP75 „old" vs „GEN2" varianty panelu (stock používá
+`EP75_800x480`).
 
 ### Server (trmnl-musthave) – moduly
 
