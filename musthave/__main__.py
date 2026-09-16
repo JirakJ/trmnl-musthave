@@ -37,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("--dry-run", action="store_true", help="vypsat payload, neposílat, neukládat stav")
     sub.add_parser("fetch", help="jen vypsat payload jako JSON")
     sub.add_parser("status", help="vypsat zařízení z TRMNL účtu")
+    ota_p = sub.add_parser("ota-mode", help="OTA čekací režim zařízení (on = polling 20 s bez kreslení, dokud nepřijde update)")
+    ota_p.add_argument("state", choices=["on", "off", "status"])
     serve_p = sub.add_parser("serve", help="BYOS server: lokální render + HTTP pro zařízení")
     serve_p.add_argument("--port", type=int, default=None)
     serve_p.add_argument("--push", action="store_true", help="posílat data i do TRMNL cloudu (webhook)")
@@ -56,6 +58,15 @@ def main(argv: list[str] | None = None) -> int:
         return run(ROOT, fetch_only=True)
     if cmd == "status":
         return status(ROOT)
+    if cmd == "ota-mode":
+        flag = ROOT / "deploy" / "firmware" / "ota_wait"
+        if args.state == "on":
+            flag.parent.mkdir(parents=True, exist_ok=True)
+            flag.touch()
+        elif args.state == "off":
+            flag.unlink(missing_ok=True)
+        print("ota-mode:", "on" if flag.exists() else "off")
+        return 0
     if cmd == "serve":
         from .serve import serve
 

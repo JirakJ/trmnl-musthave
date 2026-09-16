@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, urlparse
 from .devices import DeviceRegistry
 from .diff import area, dirty_tiles, encode_regions, merge_rects
 from .frames import FrameStore
-from .policy import DeviceState, PolicyConfig, decide
+from .policy import Decision, DeviceState, PolicyConfig, decide
 
 log = logging.getLogger(__name__)
 
@@ -124,6 +124,16 @@ def make_server(
             base = self._base()
             target_version = firmware_version()
             update = bool(target_version and fw and fw != target_version)
+            # OTA čekací režim: soubor deploy/firmware/ota_wait (CLI `ota-mode on`). Zařízení nekreslí a ptá se
+            # každých 20 s, dokud nedostane update; po ohlášení cílové verze se režim sám vypne.
+            ota_flag = fw_dir / "ota_wait" if fw_dir else None
+            ota_wait = bool(ota_flag and ota_flag.exists())
+            if ota_wait and target_version and fw == target_version:
+                ota_flag.unlink(missing_ok=True)
+                ota_wait = False
+                log.info("ota-mode finished: %s reports %s", mac, fw)
+            if ota_wait:
+                d = Decision("none", d.full_mode, d.sleep_mode, 20)
             resp = {
                 "status": 0, "action": d.action, "frame_id": latest or "",
                 "full_url": f"{base}/frames/{latest}.png" if latest else "",
@@ -135,6 +145,7 @@ def make_server(
                 "filename": latest or "",
                 "update_firmware": update, "firmware_url": f"{base}/firmware/latest.bin" if update else None,
                 "reset_firmware": False, "special_function": "none",
+                "ota_wait": ota_wait,
             }
             log.info("display %s frame=%s → %s (batt %s, fw %s, %s/%ss)", mac, reported, d.action, voltage, fw,
                      d.sleep_mode, d.refresh_rate)

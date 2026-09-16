@@ -135,3 +135,18 @@ def test_unknown_path_is_404(env):
     with pytest.raises(urllib.error.HTTPError) as err:
         get(env["base"] + "/nope")
     assert err.value.code == 404
+
+
+def test_ota_wait_mode_polls_fast_and_offers_update(env, tmp_path):
+    """OTA režim: server drží zařízení v krátkém pollingu bez kreslení, dokud nepřijde nová verze."""
+    env["frames"].put(WHITE)
+    (env["fw"] / "ota_wait").write_text("", encoding="utf-8")   # přepínač = soubor deploy/firmware/ota_wait
+    d = display(env, fw="2.0.4")
+    assert d["ota_wait"] is True and d["action"] == "none" and d["refresh_rate"] == 20
+    assert d["update_firmware"] is False                         # verze na serveru ještě není novější
+    (env["fw"] / "latest.bin").write_bytes(b"\xe9new")
+    (env["fw"] / "firmware_version.txt").write_text("2.0.5\n")
+    d = display(env, fw="2.0.4")
+    assert d["ota_wait"] is True and d["update_firmware"] is True
+    d = display(env, fw="2.0.5")                                 # zařízení už hlásí novou verzi → režim se sám vypne
+    assert d["ota_wait"] is False and not (env["fw"] / "ota_wait").exists()
