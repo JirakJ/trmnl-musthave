@@ -74,8 +74,8 @@ uv run --with python-liquid preview/render.py --layout full   # local preview â†
 
 TRMNL allows 12 pushes per hour (30 with TRMNL+) and a 5 kB payload. The collector runs every 5 minutes and
 sends when the data changed (at most 12 pushes/hour) or as a heartbeat after 15 minutes. TRMNL re-renders a
-private plugin no faster than every 6 minutes (`refresh_interval: 360` in settings.yml is the minimum without
-TRMNL+), and the device shows a new image on its own refresh cycle (set to 5 minutes here). The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
+private plugin no faster than every 15 minutes (`refresh_interval: 15` in settings.yml, in minutes, is the minimum
+without TRMNL+; 5 and 10 get rounded up), so the device refresh is set to 15 minutes too. The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
 run fails loudly above 4.5 kB.
 
 ## BYOS mode: 5-minute updates without the TRMNL cloud

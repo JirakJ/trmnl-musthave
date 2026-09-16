@@ -60,8 +60,8 @@ uv run --with python-liquid preview/render.py --layout full   # lokální náhle
 ## Limity TRMNL
 
 12 odeslání/h (30 s TRMNL+) a 5 kB payload. Sběrač běží každých 5 min a pošle, když se data změnila (max 12/h),
-nebo jako heartbeat po 15 min. Server plugin přerenderuje nejdřív po 6 min (`refresh_interval: 360` v settings.yml
-je minimum bez TRMNL+) a zařízení si nový obrázek bere ve svém cyklu (nastaveno na 5 min). Payload má ~1,1 kB při 12 profilech;
+nebo jako heartbeat po 15 min. Server plugin přerenderuje nejdřív po 15 min (`refresh_interval: 15` v settings.yml, v minutách,
+je minimum bez TRMNL+; 5 a 10 zaokrouhlí nahoru), proto je i refresh zařízení nastaven na 15 min. Payload má ~1,1 kB při 12 profilech;
 nad 4,5 kB se zkrátí názvy kategorií, pak běh selže s chybou.
 
 ## BYOS režim: aktualizace po 5 minutách bez TRMNL cloudu

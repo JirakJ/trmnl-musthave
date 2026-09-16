@@ -14,7 +14,7 @@ twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "ol
 
 [send]
 # TRMNL limit je 12 webhooků/h. Sběrač běží každých 5 min; při změně pošle hned (max 12/h),
-# heartbeat po 15 min. Server plugin renderuje nejdřív po 6 min (refresh_interval 360 s, minimum bez TRMNL+).
+# heartbeat po 15 min. Server plugin renderuje nejdřív po 15 min (refresh_interval 15 = minimum bez TRMNL+).
 min_interval_minutes = 5
 heartbeat_minutes = 15
 

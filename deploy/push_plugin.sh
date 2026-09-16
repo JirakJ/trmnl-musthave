@@ -12,7 +12,7 @@ KEY="${TRMNL_USER_API_KEY:-$(security find-generic-password -s trmnl-musthave -a
 TMP="$(mktemp -d)"
 trap 'command rm -rf "$TMP"' EXIT
 cp "$ROOT"/templates/*.liquid "$TMP/"
-printf -- "---\nstrategy: webhook\nno_screen_padding: 'no'\ndark_mode: 'no'\nrefresh_interval: 360\nid: %s\n" "$ID" > "$TMP/settings.yml"
+printf -- "---\nstrategy: webhook\nno_screen_padding: 'no'\ndark_mode: 'no'\nrefresh_interval: 15\nid: %s\n" "$ID" > "$TMP/settings.yml"
 (cd "$TMP" && zip -q plugin.zip settings.yml ./*.liquid)
 
 curl -sS -f -X POST "https://trmnl.com/api/plugin_settings/$ID/archive" \
