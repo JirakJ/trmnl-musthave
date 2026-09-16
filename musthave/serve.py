@@ -7,6 +7,7 @@ Volitelně se data pošlou i do TRMNL cloudu (webhook), aby šlo kdykoli přepno
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
@@ -72,12 +73,25 @@ def tick(
     new_state = _push(settings, http, state, payload, now, last_weather) if push else State(state.last_sent_at, state.last_payload, last_weather)
     save_state(settings.state_path, new_state)
 
+    # Stejná data → stejný snímek. Čas "aktualizováno" sám o sobě změnu nedělá, jinak by zařízení
+    # překreslovalo každou minutu jen kvůli hodinám v hlavičce.
+    rendered_path = frames.dir / "last_payload.json"
+    comparable = {k: v for k, v in payload.items() if k != "updated"}
+    try:
+        previous = json.loads(rendered_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        previous = None
+    if previous == comparable and frames.latest() is not None:
+        log.info("data unchanged, keeping frame %s", frames.latest())
+        return True
+
     try:
         png = renderer(payload)
         fid = frames.put(png_to_bitmap(png))
     except Exception as err:  # noqa: BLE001
         log.error("render failed, keeping last frame: %s", err)
         return False
+    rendered_path.write_text(json.dumps(comparable, ensure_ascii=False), encoding="utf-8")
     log.info("frame %s", fid)
     return True
 

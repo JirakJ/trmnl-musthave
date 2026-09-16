@@ -39,7 +39,8 @@ def bitmap_to_png(bitmap: bytes) -> bytes:
 
 
 def frame_id(bitmap: bytes) -> str:
-    return "musthave-" + hashlib.sha256(bitmap).hexdigest()[:10]
+    # 14znakový prefix "musthave-frame" je stálý: stock firmware maže starší soubory se stejným prefixem (purge)
+    return "musthave-frame-" + hashlib.sha256(bitmap).hexdigest()[:10]
 
 
 class FrameStore:

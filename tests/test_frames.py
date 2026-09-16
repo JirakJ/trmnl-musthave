@@ -44,7 +44,7 @@ def test_frame_id_is_stable_and_content_based():
     b = png_to_bitmap(synthetic_png(rect=(8, 0, 15, 0)))
     assert frame_id(a) == frame_id(a)
     assert frame_id(a) != frame_id(b)
-    assert frame_id(a).startswith("musthave-") and len(frame_id(a)) == len("musthave-") + 10
+    assert frame_id(a).startswith("musthave-frame-") and len(frame_id(a)) == len("musthave-frame-") + 10
 
 
 def test_store_put_get_latest_and_idempotent(tmp_path):

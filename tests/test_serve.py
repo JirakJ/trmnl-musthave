@@ -101,3 +101,21 @@ def test_tick_without_push_never_calls_trmnl(tmp_path):
     http = FakeHttp()
     tick(tmp_path, frames, http=http, env={"TRMNL_WEBHOOK_UUID": "u-1"}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: png(1), push=False)
     assert not [p for p in http.posts if "trmnl.com" in p[0]]
+
+
+def test_tick_does_not_rerender_when_data_unchanged(tmp_path):
+    """Čas v hlavičce se nesmí sám o sobě stát změnou: stejná data → stejný snímek → zařízení nic nepřekresluje."""
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames")
+    calls = []
+
+    def renderer(payload):
+        calls.append(payload["updated"])
+        return png(1)
+
+    tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=renderer, push=False)
+    first = frames.latest()
+    ok = tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 25), renderer=renderer, push=False)
+    assert ok is True
+    assert calls == ["17:20"]            # druhý tick nerenderoval
+    assert frames.latest() == first
