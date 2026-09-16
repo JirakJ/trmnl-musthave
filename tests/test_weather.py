@@ -22,7 +22,7 @@ class FakeHttp:
 
 
 def settings():
-    return Settings("Jihlava", 49.3961, 15.5912, "Europe/Prague", [], [], 360, 900, None, None, Path("x"))
+    return Settings("Jihlava", 49.3961, 15.5912, "Europe/Prague", [], [], 360, 900, None, None, None, Path("x"))
 
 
 @pytest.mark.parametrize("code,label", [(0, "Jasno"), (3, "Zataženo"), (61, "Déšť"), (96, "Bouřka"), (999, "—")])

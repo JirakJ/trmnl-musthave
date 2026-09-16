@@ -23,3 +23,15 @@ def test_send_webhook_posts_merge_variables_to_uuid_url():
 def test_send_webhook_returns_rate_limit_status():
     status, text = send_webhook(FakeHttp(429, "rate limited"), "u", {})
     assert (status, text) == (429, "rate limited")
+
+
+def test_send_data_posts_with_bearer_to_plugin_setting_id():
+    from musthave.trmnl import DATA_URL, send_data
+
+    http = FakeHttp()
+    status, _ = send_data(http, "key-1", 479481, {"updated": "10:00"})
+    assert status == 200
+    url, body, headers = http.calls[0]
+    assert url == DATA_URL.format(id=479481) == "https://trmnl.com/api/plugin_settings/479481/data"
+    assert body == {"merge_variables": {"updated": "10:00"}}
+    assert headers["Authorization"] == "Bearer key-1"

@@ -1,6 +1,6 @@
 # TRMNL „Must-have" obrazovka – návrh
 
-Datum: 2026-09-16 · Zařízení: TRMNL OG (800×480, 1-bit), friendly_id 3WKDCD, MAC E0:72:A1:34:F3:94
+Datum: 2026-09-16 · Zařízení: TRMNL OG (800×480, 1-bit)
 
 ## Cíl
 

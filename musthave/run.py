@@ -16,7 +16,7 @@ from .http import Http
 from .kick import fetch_kick
 from .payload import PayloadTooLarge, build_payload, encode
 from .state import State, load_state, save_state, should_send
-from .trmnl import send_webhook
+from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
 from .weather import fetch_weather
 
@@ -48,8 +48,14 @@ def run(
     now = now or datetime.now(ZoneInfo(settings.timezone))
     state = load_state(settings.state_path)
 
-    if not dry_run and not fetch_only and not settings.webhook_uuid:
-        print("TRMNL_WEBHOOK_UUID chybí (.env nebo prostředí). Vezmi UUID z Webhook URL privátního pluginu.", file=sys.stderr)
+    can_webhook = bool(settings.webhook_uuid)
+    can_api = bool(settings.user_api_key and settings.plugin_setting_id)
+    if not dry_run and not fetch_only and not (can_webhook or can_api):
+        print(
+            "Chybí cíl: nastav TRMNL_WEBHOOK_UUID (Webhook URL privátního pluginu), "
+            "nebo TRMNL_USER_API_KEY + [trmnl] plugin_setting_id v config.toml.",
+            file=sys.stderr,
+        )
         return 2
 
     try:
@@ -71,7 +77,10 @@ def run(
         save_state(settings.state_path, new_state)
         return 0
 
-    status, text = send_webhook(http, settings.webhook_uuid, payload)
+    if can_webhook:
+        status, text = send_webhook(http, settings.webhook_uuid, payload)
+    else:
+        status, text = send_data(http, settings.user_api_key, settings.plugin_setting_id, payload)
     if status == 429:
         log.error("429 rate limited by TRMNL; will retry next run")
         return 1

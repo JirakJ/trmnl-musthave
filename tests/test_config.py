@@ -53,3 +53,32 @@ def test_missing_uuid_is_none(tmp_path):
 def test_dotenv_strips_quotes(tmp_path):
     write(tmp_path, CONFIG, 'TRMNL_WEBHOOK_UUID="quoted"\n')
     assert load_settings(tmp_path, env={}).webhook_uuid == "quoted"
+
+
+CONFIG_WITH_TRMNL = CONFIG + """
+[trmnl]
+plugin_setting_id = 479481
+"""
+
+
+def test_plugin_setting_id_from_toml(tmp_path):
+    write(tmp_path, CONFIG_WITH_TRMNL)
+    s = load_settings(tmp_path, env={})
+    assert s.plugin_setting_id == 479481
+
+
+def test_plugin_setting_id_absent_is_none(tmp_path):
+    write(tmp_path, CONFIG)
+    assert load_settings(tmp_path, env={}).plugin_setting_id is None
+
+
+def test_secret_lookup_fills_missing_api_key(tmp_path):
+    write(tmp_path, CONFIG)
+    s = load_settings(tmp_path, env={}, secret_lookup=lambda name: "from-keychain" if name == "TRMNL_USER_API_KEY" else None)
+    assert s.user_api_key == "from-keychain"
+
+
+def test_environment_wins_over_secret_lookup(tmp_path):
+    write(tmp_path, CONFIG)
+    s = load_settings(tmp_path, env={"TRMNL_USER_API_KEY": "env"}, secret_lookup=lambda name: "kc")
+    assert s.user_api_key == "env"

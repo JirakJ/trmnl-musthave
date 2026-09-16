@@ -16,3 +16,9 @@ twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "ol
 # TRMNL limit je 12 webhooků/h. 6 min mezi změnami + 15 min heartbeat = max 10/h.
 min_interval_minutes = 6
 heartbeat_minutes = 15
+
+[trmnl]
+# Číselné id instance privátního pluginu (z URL v TRMNL dashboardu nebo `GET /api/plugin_settings`).
+# Spolu s TRMNL_USER_API_KEY (Keychain / prostředí) se data posílají přes autentizované API;
+# alternativa je TRMNL_WEBHOOK_UUID z Webhook URL, pak plugin_setting_id není potřeba.
+plugin_setting_id = 479481

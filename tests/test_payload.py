@@ -64,6 +64,6 @@ def test_encode_is_compact_utf8():
 
 
 def test_oversized_payload_raises():
-    kick = {"ok": True, "items": [item(f"S{i}", True, 1, "Game" * 5, "12:34") for i in range(60)]}
+    kick = {"ok": True, "items": [item(f"S{i}", True, 1, "Game" * 5, "12:34") for i in range(200)]}
     with pytest.raises(PayloadTooLarge):
         build_payload(WEATHER, kick, {"ok": True, "items": []}, datetime(2026, 9, 16))

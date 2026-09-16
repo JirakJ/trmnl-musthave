@@ -1,4 +1,4 @@
-"""Skládání merge_variables pro TRMNL webhook (limit 2 kB)."""
+"""Skládání merge_variables pro TRMNL webhook (limit 5 kB bez TRMNL+, držíme rezervu)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import copy
 import json
 from datetime import datetime
 
-MAX_BYTES = 1900
+MAX_BYTES = 4500
 GAME_MAX = 22
 GAME_MIN = 12
 

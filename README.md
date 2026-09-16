@@ -1,73 +1,100 @@
 # TRMNL Must-have
 
-Jedna obrazovka pro [TRMNL](https://trmnl.com) e-ink displej (800×480): počasí pro Jihlavu, stav sledovaných
-Kick a Twitch streamerů (online/offline, diváci, kategorie, čas začátku).
+One screen for a [TRMNL](https://trmnl.com) e-ink display (800×480): local weather plus the live status of the
+Kick and Twitch streamers you follow (online/offline, viewers, category, start time).
 
-Sběrač je čistý Python 3.12 (jen stdlib), běží periodicky na Raspberry Pi a posílá data na webhook
-privátního TRMNL pluginu. Vykreslení dělá TRMNL z Liquid šablony v `templates/`.
+The collector is plain Python 3.12 (standard library only). It runs on a timer, fetches the data and pushes it to a
+TRMNL private plugin. TRMNL renders the screen from the Liquid templates in `templates/`.
 
-## Zdroje dat (bez API klíčů)
+Česká verze: [README.cs.md](README.cs.md)
 
-| Zdroj | Jak |
+![full layout](preview/full.png)
+
+## Data sources (no API keys required)
+
+| Source | How |
 | --- | --- |
-| Počasí | [Open-Meteo](https://open-meteo.com), souřadnice z `config.toml` |
-| Kick | neoficiální `kick.com/api/v2/channels/<slug>` |
-| Twitch | veřejný GraphQL endpoint webu twitch.tv (Client-ID z HTML stránky, při změně se obnoví sám), fallback [decapi.me](https://decapi.me) |
+| Weather | [Open-Meteo](https://open-meteo.com), coordinates from `config.toml` |
+| Kick | unofficial `kick.com/api/v2/channels/<slug>` endpoint |
+| Twitch | the public GraphQL endpoint the twitch.tv website uses (Client-ID read from the page, refreshed automatically), fallback [decapi.me](https://decapi.me) |
 
-## Konfigurace
+No Twitch or Kick developer application is needed.
 
-`config.toml` – město, souřadnice, seznamy profilů a kadence odesílání. Profily jsou jen pole řetězců,
-přidání/odebrání = editace souboru a znovu nasadit (`deploy/install.sh`).
+## Configuration
 
-`.env` (negitované, vytvoř ručně v kořenu projektu):
+`config.toml` holds the city, coordinates, the streamer lists and the send cadence. Streamers are plain string arrays;
+edit the file and redeploy.
 
-```
-TRMNL_WEBHOOK_UUID=<uuid z Webhook URL privátního pluginu>
-TRMNL_USER_API_KEY=<volitelné, pro `python3 -m musthave status`>
-```
+```toml
+[streams]
+kick = ["fattypillow", "czechfather", "astatoro", "miken", "czechcloud"]
+twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "oliverovykecy", "rob2628"]
 
-## Založení privátního pluginu na trmnl.com (jednou, ručně)
-
-1. trmnl.com → Plugins → Private Plugin → **New**.
-2. Name `Must-have`, Strategy **Webhook**, Save. Zobrazí se **Webhook URL**
-   `https://trmnl.com/api/custom_plugins/<UUID>` – UUID zkopíruj do `.env`.
-3. **Edit Markup** → do pole *Full* vlož obsah `templates/full.liquid`; volitelně
-   `half_horizontal.liquid`, `half_vertical.liquid`, `quadrant.liquid` do příslušných polí (pro mashupy). Save.
-4. Playlists → přidej plugin do playlistu zařízení.
-5. Lokálně `python3 -m musthave run` – první běh pošle data hned, TRMNL vyrenderuje obrazovku (Force Refresh
-   v nastavení pluginu urychlí náhled).
-
-## Příkazy
-
-```
-python3 -m musthave run            # stáhnout + poslat (respektuje limity)
-python3 -m musthave run --dry-run  # vypsat payload, nic neposílat
-python3 -m musthave fetch          # jen JSON
-python3 -m musthave status         # zařízení na účtu (potřebuje TRMNL_USER_API_KEY)
-uv run --with pytest pytest -q     # testy (bez sítě)
-uv run --with python-liquid preview/render.py --layout full   # lokální náhled → preview/out.html
+[trmnl]
+plugin_setting_id = 479481   # numeric id of your private plugin instance
 ```
 
-## Limity TRMNL webhooku a jak je držíme
+Secrets never live in the repo. The collector reads them, in this order of precedence, from the environment,
+from a git-ignored `.env` file in the project root, or (macOS) from the Keychain:
 
-TRMNL bez TRMNL+ povoluje 12 webhooků/h a 2 kB payload. Sběrač běží každých 5 min, ale pošle jen když se
-data změnila a od posledního odeslání uplynulo ≥ 6 min, nebo jako heartbeat po 15 min → max 10/h.
-Payload má ~1,1 kB při 12 profilech; při překročení 1,9 kB se zkrátí názvy kategorií, pak běh selže s chybou.
+| Variable | Purpose |
+| --- | --- |
+| `TRMNL_USER_API_KEY` | user API key (trmnl.com → Account). Used with `plugin_setting_id` to push data through the authenticated API and for `status`. |
+| `TRMNL_WEBHOOK_UUID` | alternative: the UUID from the plugin's Webhook URL. If set, it is preferred and no API key is needed. |
 
-## Nasazení na Raspberry Pi
+Keychain entry: `security add-generic-password -s trmnl-musthave -a TRMNL_USER_API_KEY -w <key>`.
+
+## Creating the private plugin
+
+Everything can be done through the API with the user key (the TRMNL UI works too):
+
+```bash
+# 1. create the instance (plugin_id 37 = Private Plugin); note the returned id
+curl -X POST https://trmnl.com/api/plugin_settings -H "Authorization: Bearer $TRMNL_USER_API_KEY" \
+  -H "Content-Type: application/json" -d '{"plugin_id":37,"name":"Must-have"}'
+# 2. upload strategy + templates as a zip archive (settings.yml with `strategy: webhook` + the .liquid files)
+deploy/push_plugin.sh <id>
+# 3. put the id into config.toml → [trmnl] plugin_setting_id
+# 4. add the plugin to your device playlist (TRMNL UI → Playlists) and run once
+python3 -m musthave run
+```
+
+## Commands
 
 ```
-deploy/install.sh        # rsync do rpi:~/trmnl-musthave + systemd timer (5 min), .env se zkopíruje
-ssh rpi journalctl -u 'trmnl-musthave@*' -n 20   # logy
+python3 -m musthave run            # fetch + push (respects the rate limits)
+python3 -m musthave run --dry-run  # print the payload, send nothing
+python3 -m musthave fetch          # JSON only
+python3 -m musthave status         # devices on the account (needs TRMNL_USER_API_KEY)
+uv run --with pytest pytest -q     # tests (no network)
+uv run --with python-liquid preview/render.py --layout full   # local preview → preview/out.html
 ```
 
-## Struktura
+## Rate limits
+
+TRMNL allows 12 pushes per hour (30 with TRMNL+) and a 5 kB payload. The collector runs every 5 minutes but only
+sends when the data changed and at least 6 minutes passed, or as a heartbeat after 15 minutes, so it stays at
+10 pushes/hour at most. The payload is about 1.1 kB for 12 streamers; category names are shortened first and the
+run fails loudly above 4.5 kB.
+
+## Deploying to a Raspberry Pi
 
 ```
-musthave/   config, http, weather, kick, twitch, payload, state, trmnl (webhook), run, __main__
+deploy/install.sh [ssh-host]      # rsync to ~/trmnl-musthave + systemd timer (5 min); copies .env if present
+ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
+```
+
+## Layout
+
+```
+musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run, __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
-preview/    render.py + sample.json (reálný payload)
-deploy/     systemd service + timer + install.sh
-tests/      pytest, fixtures z reálných odpovědí
-docs/superpowers/  spec + implementační plán
+preview/    render.py, sample.json (real payload), screenshots
+deploy/     systemd service + timer, install.sh, push_plugin.sh
+tests/      pytest with fixtures captured from the real APIs
+docs/superpowers/  design spec and implementation plan (Czech)
 ```
+
+## License
+
+MIT

@@ -43,9 +43,12 @@ class FakeHttp:
         return self.webhook_status, "{}"
 
 
-def project(tmp_path, uuid="uuid-1"):
-    (tmp_path / "config.toml").write_text(CONFIG, encoding="utf-8")
+def project(tmp_path, uuid="uuid-1", api=False):
+    cfg = CONFIG + ("\n[trmnl]\nplugin_setting_id = 479481\n" if api else "")
+    (tmp_path / "config.toml").write_text(cfg, encoding="utf-8")
     env = {"TRMNL_WEBHOOK_UUID": uuid} if uuid else {}
+    if api:
+        env["TRMNL_USER_API_KEY"] = "key-1"
     return env
 
 
@@ -105,3 +108,20 @@ def test_run_on_429_keeps_previous_state(tmp_path):
     save_state(tmp_path / "state" / "last.json", old)
     assert run(tmp_path, http=FakeHttp(webhook_status=429), env=env, now=now) == 1
     assert load_state(tmp_path / "state" / "last.json") == old
+
+
+def test_run_uses_authenticated_data_endpoint_when_no_uuid(tmp_path):
+    env = project(tmp_path, uuid=None, api=True)
+    http = FakeHttp()
+    assert run(tmp_path, http=http, env=env, now=datetime(2026, 9, 16, 17, 20)) == 0
+    posts = [p for p in http.posts if "plugin_settings/479481/data" in p[0]]
+    assert len(posts) == 1 and posts[0][1]["merge_variables"]["updated"] == "17:20"
+    assert not [p for p in http.posts if "custom_plugins" in p[0]]
+
+
+def test_run_prefers_webhook_uuid_when_both_configured(tmp_path):
+    env = project(tmp_path, uuid="uuid-1", api=True)
+    http = FakeHttp()
+    assert run(tmp_path, http=http, env=env, now=datetime(2026, 9, 16, 17, 20)) == 0
+    assert [p for p in http.posts if "custom_plugins/uuid-1" in p[0]]
+    assert not [p for p in http.posts if "/data" in p[0]]
