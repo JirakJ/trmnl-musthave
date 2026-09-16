@@ -6,45 +6,56 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
 <style>
   .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
   .mh .columns { align-items: flex-start; }
-  .mh .column { overflow: hidden; }
-  .mh-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #000; min-height: 30px; }
+  .mh .column { overflow: hidden; justify-content: flex-start; align-items: stretch; }
+  .mh-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #000; min-height: 31px; flex-shrink: 0; }
   .mh-row:last-child { border-bottom: none; }
   .mh-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
   .mh-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mh-game { font-size: 11px; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mh-viewers { flex: 0 0 auto; font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; font-size: 14px; font-weight: 600; }
-  .mh-off { min-height: 22px; padding: 1px 0; }
+  .mh-off { min-height: 23px; padding: 1px 0; }
   .mh-off .mh-name { font-weight: 400; font-size: 13px; color: #555; }
   .mh-badge { flex: 0 0 auto; display: inline-block; min-width: 40px; text-align: center; padding: 1px 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; border: 1.5px solid #000; }
   .mh-badge--live { background: #000; color: #fff; }
   .mh-badge--off { color: #555; border-color: #555; }
-  .mh-weather { display: flex; align-items: center; gap: 28px; }
-  .mh-weather-main { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; }
-  .mh-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mh-weather { display: flex; align-items: center; gap: 20px; width: 100%; min-width: 0; }
+  .mh-weather-main { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; }
+  .mh-weather-main .mh-temp { font-size: 72px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .mh-weather-main .description { font-size: 12px; }
+  .mh-days { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .mh-day { text-align: center; white-space: nowrap; }
-  .mh-day .mh-temps { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .mh-day .mh-temps { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .mh-day .description { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-head { display: flex; justify-content: space-between; align-items: baseline; width: 100%; border-bottom: 2px solid #000; padding-bottom: 3px; }
+  .mh-head-title { font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+  .mh-head-meta { font-size: 13px; font-weight: 500; }
   .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
 </style>
 
 <div class="layout layout--col gap--small mh">
 
+  <div class="mh-head">
+    <span class="mh-head-title">MUST-HAVE</span>
+    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}</span>
+  </div>
+
   <div class="mh-weather">
     <div class="mh-weather-main">
       {% if weather.ok %}
-      <span class="value value--xxlarge value--tnums">{{ weather.temp | round }}°</span>
+      <span class="mh-temp">{{ weather.temp | round }}°</span>
       <div class="flex flex--col">
         <span class="title">{{ weather.label }}</span>
         <span class="description">Pocitově {{ weather.feels | round }}° · Vlhkost {{ weather.hum }} % · Vítr {{ weather.wind }} km/h</span>
       </div>
       {% else %}
-      <span class="value value--xxlarge">—</span>
+      <span class="mh-temp">—</span>
       <div class="flex flex--col">
         <span class="title">Počasí nedostupné</span>
         <span class="description">Open-Meteo neodpovídá</span>
       </div>
       {% endif %}
     </div>
-    <div class="mh-days w--full">
+    <div class="mh-days">
       {% for day in weather.days %}
       <div class="mh-day">
         <span class="label label--small">{{ day.d }}</span>
@@ -99,10 +110,4 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
     </div>
   </div>
 
-</div>
-
-<div class="title_bar">
-  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
-  <span class="title">Must-have</span>
-  <span class="instance">Jihlava · aktualizováno {{ updated }}</span>
 </div>

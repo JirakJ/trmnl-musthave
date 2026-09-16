@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Lokální render Liquid šablony do preview/out.html (vývoj bez TRMNL editoru).
 
+Shell napodobuje TRMNL OG (classes + CSS proměnné z GET /api/models, model og_png).
+
 Spuštění: uv run --with python-liquid preview/render.py [--layout full] [--data preview/sample.json]
 Výsledek otevři v prohlížeči v okně 800x480 (nebo screenshot přes Chrome).
 """
@@ -28,7 +30,7 @@ SHELL = """<!DOCTYPE html>
   <style>body {{ margin: 0; background: #888; }} .screen {{ margin: 0; }}</style>
 </head>
 <body class="environment trmnl">
-  <div class="screen">
+  <div class="screen screen--og_png screen--md screen--density-1x" style="--screen-w:800px;--screen-h:480px;--pixel-ratio:1.0;--dither-pixel-ratio:1.0;--device-ui-scale:1.0;--gap-scale:1.0">
     <div class="view view--{layout}">
 {body}
     </div>

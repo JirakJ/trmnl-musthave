@@ -14,10 +14,9 @@ TAG_VAR_RE = re.compile(r"{%\s*(?:if|unless|elsif|for\s+\w+\s+in)\s+([a-zA-Z_]\w
 
 
 @pytest.mark.parametrize("layout", LAYOUTS)
-def test_template_exists_and_has_title_bar(layout):
+def test_template_exists_and_shows_updated_time(layout):
     src = (TEMPLATES / f"{layout}.liquid").read_text(encoding="utf-8")
-    assert 'class="title_bar"' in src
-    assert "{{ updated }}" in src
+    assert "{{ updated }}" in src  # čas aktualizace musí být vidět (title bar nebo vlastní hlavička)
 
 
 @pytest.mark.parametrize("layout", LAYOUTS)

@@ -61,12 +61,18 @@ def keychain_lookup(name: str) -> str | None:
     return out.stdout.strip() or None if out.returncode == 0 else None
 
 
+_USE_KEYCHAIN = object()
+
+
 def load_settings(
     root: Path,
     env: Mapping[str, str] | None = None,
-    secret_lookup: Callable[[str], str | None] | None = keychain_lookup,
+    secret_lookup: Callable[[str], str | None] | None | object = _USE_KEYCHAIN,
 ) -> Settings:
+    """secret_lookup: None = žádné doplňování tajemství, jinak callable(name) -> hodnota; výchozí je Keychain."""
     env = os.environ if env is None else env
+    if secret_lookup is _USE_KEYCHAIN:
+        secret_lookup = keychain_lookup  # rozhoduje se až za běhu, aby šlo v testech nahradit
     raw = tomllib.loads((root / "config.toml").read_text(encoding="utf-8"))
     merged = {**read_dotenv(root / ".env"), **env}
     for name in SECRET_NAMES:
