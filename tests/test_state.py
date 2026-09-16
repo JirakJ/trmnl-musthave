@@ -33,7 +33,7 @@ def test_heartbeat_sends_even_if_unchanged():
 def test_state_roundtrip_and_missing_file(tmp_path):
     path = tmp_path / "nested" / "last.json"
     assert load_state(path) == State()
-    st = State(last_sent_at=5.0, last_payload=P1, twitch_client_id="cid")
+    st = State(last_sent_at=5.0, last_payload=P1)
     save_state(path, st)
     assert load_state(path) == st
 
@@ -42,3 +42,9 @@ def test_corrupt_state_file_is_ignored(tmp_path):
     path = tmp_path / "last.json"
     path.write_text("{not json", encoding="utf-8")
     assert load_state(path) == State()
+
+
+def test_unknown_keys_in_state_file_are_ignored(tmp_path):
+    path = tmp_path / "last.json"
+    path.write_text('{"last_sent_at": 1.0, "last_payload": {"x": 1}, "twitch_client_id": "legacy"}', encoding="utf-8")
+    assert load_state(path) == State(last_sent_at=1.0, last_payload={"x": 1})

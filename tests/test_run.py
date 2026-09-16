@@ -58,12 +58,11 @@ def test_collect_combines_all_sources():
     root = Path(tempfile.mkdtemp())
     env = project(root)
     settings = load_settings(root, env)
-    payload, state = collect(FakeHttp(), settings, State(), datetime(2026, 9, 16, 17, 20))
+    payload = collect(FakeHttp(), settings, datetime(2026, 9, 16, 17, 20))
     assert payload["updated"] == "17:20"
     assert payload["weather"]["ok"] and payload["kick"]["ok"] and payload["twitch"]["ok"]
     assert payload["kick"]["items"][0]["n"] == "Astatoro"
     assert payload["twitch"]["items"][0]["n"] == "ArcadeBulls"
-    assert state.twitch_client_id
 
 
 def test_run_sends_and_saves_state(tmp_path):

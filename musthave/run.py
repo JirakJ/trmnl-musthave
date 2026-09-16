@@ -23,16 +23,15 @@ from .weather import fetch_weather
 log = logging.getLogger("musthave")
 
 
-def collect(http, settings: Settings, state: State, now: datetime) -> tuple[dict, State]:
-    client_id = state.twitch_client_id or DEFAULT_CLIENT_ID
+def collect(http, settings: Settings, now: datetime) -> dict:
+    """Paralelně stáhne všechny zdroje a poskládá payload. Twitch Client-ID se při 400 obnoví za běhu."""
     with ThreadPoolExecutor(max_workers=3) as pool:
         weather_f = pool.submit(fetch_weather, http, settings, now)
         kick_f = pool.submit(fetch_kick, http, settings.kick)
-        twitch_f = pool.submit(fetch_twitch, http, settings.twitch, client_id)
+        twitch_f = pool.submit(fetch_twitch, http, settings.twitch, DEFAULT_CLIENT_ID)
         weather, kick = weather_f.result(), kick_f.result()
-        twitch, used_client_id = twitch_f.result()
-    payload = build_payload(weather, kick, twitch, now)
-    return payload, State(state.last_sent_at, state.last_payload, used_client_id)
+        twitch, _ = twitch_f.result()
+    return build_payload(weather, kick, twitch, now)
 
 
 def run(
@@ -59,7 +58,7 @@ def run(
         return 2
 
     try:
-        payload, new_state = collect(http, settings, state, now)
+        payload = collect(http, settings, now)
     except PayloadTooLarge as err:
         print(f"payload too large: {err}", file=sys.stderr)
         return 1
@@ -74,7 +73,6 @@ def run(
     send, reason = should_send(state, payload, now.timestamp(), settings.min_interval_s, settings.heartbeat_s)
     if not send:
         log.info("skip (%s)", reason)
-        save_state(settings.state_path, new_state)
         return 0
 
     if can_webhook:
@@ -87,8 +85,6 @@ def run(
     if status >= 400:
         log.error("webhook failed %s: %s", status, text[:200])
         return 1
-    new_state.last_sent_at = now.timestamp()
-    new_state.last_payload = payload
-    save_state(settings.state_path, new_state)
+    save_state(settings.state_path, State(last_sent_at=now.timestamp(), last_payload=payload))
     log.info("sent (%s) %d B", reason, size)
     return 0

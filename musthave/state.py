@@ -1,4 +1,4 @@
-"""Stav mezi běhy: poslední odeslaný payload, čas odeslání, cache Twitch client id."""
+"""Stav mezi běhy: poslední odeslaný payload a čas odeslání."""
 
 from __future__ import annotations
 
@@ -14,13 +14,12 @@ log = logging.getLogger(__name__)
 class State:
     last_sent_at: float | None = None
     last_payload: dict | None = None
-    twitch_client_id: str | None = None
 
 
 def load_state(path: Path) -> State:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload", "twitch_client_id")})
+        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload")})
     except FileNotFoundError:
         return State()
     except Exception as err:  # noqa: BLE001
