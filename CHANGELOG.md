@@ -4,6 +4,8 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-17
+
 ### Added
 - Frames still shown by a device survive the FrameStore limit (`FrameStore.put(..., pinned=...)`, `DeviceRegistry.frame_ids()`), so a device that was unreachable while the server kept rendering gets a partial refresh instead of a full-screen flash, as long as the hourly / 04:00 ghost-cleaning full is not due (pinned: the frame each device reports and the one it was last sent; only devices seen in the last 48 h; the pin snapshot and the store update happen under the registry lock). Pairs with firmware 2.0.7+ outage recovery.
 - Battery voltage plausibility: readings outside 3.0–5.5 V or non-finite (an exactly halved ADC value was seen on some firmware builds) never reach the power policy (→ battery mode) and are not stored; the last plausible value is kept per device (`DeviceState.voltage`) and the warning is logged once per transition.
