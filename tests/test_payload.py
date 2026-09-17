@@ -77,3 +77,31 @@ def test_build_payload_adds_date_host_and_fw():
     assert p["date"] == "Čtvrtek 17. 9. 2026" and p["host"] == "RPi" and p["fw"] == "2.0.6"
     q = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 10, 20))
     assert q["host"] == "" and q["fw"] == "" and q["date"] == "Čtvrtek 17. 9. 2026"
+
+
+def test_countdowns_days_left_and_short_date():
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    events = [Countdown("GTA VI", date(2026, 11, 19)), Countdown("WoW Forever", date(2026, 11, 4))]
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 23, 59), countdowns=events)
+    assert p["countdowns"] == [
+        {"n": "WoW Forever", "days": 48, "d": "4. 11."},
+        {"n": "GTA VI", "days": 63, "d": "19. 11."},
+    ]
+
+
+def test_countdowns_skip_past_events_and_keep_release_day():
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    events = [Countdown("Old", date(2026, 9, 16)), Countdown("Today", date(2026, 9, 17))]
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 8, 0), countdowns=events)
+    assert p["countdowns"] == [{"n": "Today", "days": 0, "d": "17. 9."}]
+
+
+def test_countdowns_default_empty():
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17))
+    assert p["countdowns"] == []

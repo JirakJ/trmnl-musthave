@@ -120,3 +120,18 @@ def test_headless_mode_setting(tmp_path):
     assert load_settings(tmp_path, env={}, secret_lookup=None).headless == "old"
     write(tmp_path, CONFIG)
     assert load_settings(tmp_path, env={}, secret_lookup=None).headless == "auto"
+
+
+def test_countdowns_parsed_from_array_of_tables(tmp_path):
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    write(tmp_path, CONFIG + '\n[[countdown]]\nname = "GTA VI"\ndate = 2026-11-19\n\n[[countdown]]\nname = "WoW Forever"\ndate = "2026-11-04"\n')
+    s = load_settings(tmp_path, env={})
+    assert s.countdowns == (Countdown("GTA VI", date(2026, 11, 19)), Countdown("WoW Forever", date(2026, 11, 4)))
+
+
+def test_countdowns_default_empty(tmp_path):
+    write(tmp_path, CONFIG)
+    assert load_settings(tmp_path, env={}).countdowns == ()

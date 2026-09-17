@@ -23,6 +23,15 @@ privátního pluginu). Profily jsou pole řetězců, přidání/odebrání = edi
 pro stroj (`[server] port`, `label`, `headless`) patří do negitovaného `config.local.toml` vedle něj; přepisuje stejné
 tabulky a `deploy/install.sh` ho nikdy nepřepíše.
 
+Volitelné `[[countdown]]` položky (`name` + `date`) vykreslí spodní lištu s odpočtem dnů (kalendářní dny v nastavené
+časové zóně, řazeno od nejbližší). V den vydání se ukáže `DNES`, minulé události zmizí samy:
+
+```toml
+[[countdown]]
+name = "GTA VI"
+date = 2026-11-19
+```
+
 Tajemství nejsou v repu. Sběrač je čte v tomto pořadí z prostředí, z negitovaného `.env` v kořenu projektu, nebo
 (macOS) z Keychain:
 

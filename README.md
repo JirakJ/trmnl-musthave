@@ -33,7 +33,14 @@ twitch = ["arcadebulls", "agraelus", "artemis", "cruelladk", "conducteir77", "ol
 
 [trmnl]
 plugin_setting_id = 479481   # numeric id of your private plugin instance
+
+[[countdown]]                # optional: days-to-go strip at the bottom of the screen
+name = "GTA VI"
+date = 2026-11-19
 ```
+
+Each `[[countdown]]` entry becomes a "days to go" item (calendar days in the configured timezone, sorted by the
+nearest date). The release day shows `DNES`; past events disappear on their own.
 
 Secrets never live in the repo. The collector reads them, in this order of precedence, from the environment,
 from a git-ignored `.env` file in the project root, or (macOS) from the Keychain:

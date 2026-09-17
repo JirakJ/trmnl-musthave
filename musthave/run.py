@@ -36,7 +36,7 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         twitch, _ = twitch_f.result()
     weather, remembered = with_fallback(weather, last_weather, now.timestamp())
     host = settings.label or socket.gethostname().split(".")[0]
-    return build_payload(weather, kick, twitch, now, host=host, fw=fw), remembered
+    return build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns), remembered
 
 
 def run(
