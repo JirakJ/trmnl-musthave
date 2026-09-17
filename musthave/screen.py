@@ -43,6 +43,26 @@ SHELL = """<!DOCTYPE html>
 </html>
 """
 
+class RenderError(RuntimeError):
+    pass
+
+
+def check_screenshot(img) -> None:
+    """Zahodí screenshot, který Chromium nedokreslilo: špatná velikost nebo spodní pás plný ne-bílých pixelů.
+
+    Šablona má dole vždy bílé pozadí (max. tenké linky), takže > 20 % tmavších pixelů v posledních 60 řádcích
+    znamená šedou/šumovou výplň nedokresleného viewportu (viděno na Chromium 126 na Raspberry Pi)."""
+    if img.size != (WIDTH, HEIGHT):
+        raise RenderError(f"screenshot size {img.size}, expected {(WIDTH, HEIGHT)}")
+    gray = img.convert("L")
+    band = gray.crop((0, HEIGHT - 60, WIDTH, HEIGHT))
+    hist = band.histogram()
+    dark = sum(hist[:200])
+    ratio = dark / (band.size[0] * band.size[1])
+    if ratio > 0.2:
+        raise RenderError(f"bottom band {ratio:.0%} non-white – unfinished render")
+
+
 CHROME_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -76,15 +96,15 @@ def find_chrome(explicit: str | None = None) -> str:
     raise RuntimeError("Chrome/Chromium nenalezen – nastav [server] chrome v config.toml")
 
 
-def screenshot(html: str, chrome: str, timeout_s: int = 60) -> bytes:
-    """Vyrenderuje HTML v headless Chrome na 800×480 PNG."""
+def screenshot(html: str, chrome: str, timeout_s: int = 60, headless: str = "new") -> bytes:
+    """Vyrenderuje HTML v headless Chrome na 800×480 PNG. headless: "new" | "old" (Chromium ≤ 126 na RPi)."""
     with tempfile.TemporaryDirectory(prefix="musthave-") as tmp:
         page = Path(tmp) / "page.html"
         out = Path(tmp) / "shot.png"
         page.write_text(html, encoding="utf-8")
         # bez --user-data-dir: čerstvý profil v headless režimu na macOS visí
         cmd = [
-            chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-sandbox",
+            chrome, "--headless=new" if headless == "new" else "--headless", "--disable-gpu", "--hide-scrollbars", "--no-sandbox",
             f"--window-size={WIDTH},{HEIGHT}", "--virtual-time-budget=8000",
             f"--screenshot={out}", page.as_uri(),
         ]
@@ -113,4 +133,16 @@ def to_device_image(png: bytes, fmt: str = "png") -> bytes:
 def render_screen(payload: dict, chrome: str | None = None, fmt: str = "png", layout: str = "full") -> bytes:
     """Celý řetězec payload → bytes obrázku pro zařízení."""
     html = build_html(render_markup(payload, layout), layout)
-    return to_device_image(screenshot(html, find_chrome(chrome)), fmt)
+    exe = find_chrome(chrome)
+    from PIL import Image
+
+    last_err: Exception | None = None
+    for mode in ("new", "old"):
+        png = screenshot(html, exe, headless=mode)
+        try:
+            check_screenshot(Image.open(io.BytesIO(png)))
+            return to_device_image(png, fmt)
+        except RenderError as err:  # Chromium 126 (RPi) v novém headless režimu ořízne viewport na 390 px
+            log.warning("screenshot rejected (%s mode): %s", mode, err)
+            last_err = err
+    raise last_err or RenderError("render failed")
