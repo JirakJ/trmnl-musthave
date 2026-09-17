@@ -5,11 +5,9 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 ## [Unreleased]
 
 ### Added
-- Frames still shown by a device survive the FrameStore limit (`FrameStore.put(..., pinned=...)`, `DeviceRegistry.frame_ids()`), so after a server outage the device gets a partial refresh instead of a full-screen flash (pinned: the frame each device reports and the one it was last sent; only devices seen in the last 48 h, at most 8 devices; the registry is re-read right before storing). Pairs with firmware 2.0.7+ outage recovery.
-- Battery voltage plausibility: readings below 3.0 V (physically impossible for the ESP32-C3, seen as an exactly halved ADC value on some firmware builds) are logged and ignored; the power policy uses the device's last plausible voltage (`DeviceState.voltage`) instead, so a bad reading can never flip USB/battery mode.
-
-### Changed
-- The hourly and 04:00 ghost-cleaning full refreshes only fire after at least one partial since the last full, so a panel returning from an outage gets one partial first.
+- Frames still shown by a device survive the FrameStore limit (`FrameStore.put(..., pinned=...)`, `DeviceRegistry.frame_ids()`), so a device that was unreachable while the server kept rendering gets a partial refresh instead of a full-screen flash, as long as the hourly / 04:00 ghost-cleaning full is not due (pinned: the frame each device reports and the one it was last sent; only devices seen in the last 48 h; the pin snapshot and the store update happen under the registry lock). Pairs with firmware 2.0.7+ outage recovery.
+- Battery voltage plausibility: readings outside 3.0–5.5 V or non-finite (an exactly halved ADC value was seen on some firmware builds) never reach the power policy (→ battery mode) and are not stored; the last plausible value is kept per device (`DeviceState.voltage`) and the warning is logged once per transition.
+- Device registry writes are serialised by a process-wide lock with unique temp files (two devices waking in the same slot could leave an empty `devices.json`); `ota_wait` is decided before the policy so waiting polls no longer count phantom partial/full refreshes.
 
 ## [1.2.0] - 2026-09-17
 

@@ -186,9 +186,10 @@ def test_implausible_voltage_falls_back_to_last_plausible_reading(tmp_path, capl
         assert d["sleep_mode"] == "light" and devices.get(MAC).voltage == 4.75
         with caplog.at_level(logging.WARNING, logger="musthave.server"):
             d = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "2.05"})[2])
-        assert d["sleep_mode"] == "light"                      # poslední věrohodné napětí = USB
+            d2 = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "2.06"})[2])
+        assert d["sleep_mode"] == "deep" and d2["sleep_mode"] == "deep"   # nevěrohodné → bezpečný režim baterie
         assert devices.get(MAC).voltage == 4.75                 # implausibilní hodnota se neukládá
-        assert "implausible" in caplog.text and "2.05" in caplog.text
+        assert caplog.text.count("implausible") == 1 and "2.05" in caplog.text  # varování jen při přechodu
         d = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "3.9"})[2])
         assert d["sleep_mode"] == "deep" and devices.get(MAC).voltage == 3.9
     finally:
@@ -205,6 +206,27 @@ def test_display_pins_the_served_frame(env):
     assert env["devices"].frame_ids(now=env["clock"]["now"].timestamp()) == {fid}
 
 
-def test_implausible_voltage_without_history_means_battery(env):
-    d = display(env, voltage="2.05")
-    assert d["sleep_mode"] == "deep"
+def test_implausible_voltage_without_history_means_battery(tmp_path):
+    frames = FrameStore(tmp_path / "frames")
+    frames.put(WHITE)
+    srv = make_server(frames, DeviceRegistry(tmp_path / "d.json"), PolicyConfig(align_minutes=0), port=0)  # power auto
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        base = f"http://127.0.0.1:{srv.server_port}"
+        hdr = {"ID": MAC, "Access-Token": "musthave-local", "FW-Version": "2.0.6"}
+        assert json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "2.05"})[2])["sleep_mode"] == "deep"
+        assert json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "4.75"})[2])["sleep_mode"] == "light"  # pozitivní kontrola
+    finally:
+        srv.shutdown()
+
+
+def test_ota_wait_does_not_count_phantom_refreshes(env):
+    """Čekací dotazy (každých 20 s) nesmí zvyšovat partials_since_full ani posouvat last_full_at."""
+    env["frames"].put(WHITE)
+    (env["fw"] / "firmware_version.txt").write_text("9.9.9", encoding="utf-8")
+    (env["fw"] / "ota_wait").write_text("", encoding="utf-8")
+    for _ in range(3):
+        d = display(env, fw="2.0.6")
+        assert d["ota_wait"] is True and d["action"] == "none" and d["refresh_rate"] == 20
+    st = env["devices"].get(MAC)
+    assert st.partials_since_full == 0 and st.last_full_at is None and st.target_frame_id is None

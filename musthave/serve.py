@@ -17,7 +17,7 @@ from typing import Callable, Mapping
 from zoneinfo import ZoneInfo
 
 from .config import load_settings
-from .devices import DeviceRegistry
+from .devices import LOCK as DEVICES_LOCK, DeviceRegistry
 from .frames import FrameStore, png_to_bitmap
 from .http import Http
 from .run import collect
@@ -90,12 +90,18 @@ def tick(
 
     try:
         png = renderer(payload)
-        # Snímky, které zařízení zobrazují nebo právě dostala, přežijí limit úložiště (partial místo full po
-        # výpadku). Registr se čte znovu až tady: render trvá sekundy a HTTP vlákno ho mezitím mění.
-        pinned = DeviceRegistry(root / "state" / "devices.json").frame_ids(now=now.timestamp())
-        fid = frames.put(png_to_bitmap(png), pinned=pinned)
     except Exception as err:  # noqa: BLE001
         log.error("render failed, keeping last frame: %s", err)
+        return False
+    # Snímky, které zařízení zobrazují nebo právě dostala, přežijí limit úložiště (partial místo full, když se
+    # zařízení vrátí po výpadku). Registr se čte až po renderu (ten trvá sekundy) a pod stejným zámkem, pod
+    # kterým HTTP vlákno rozhoduje, aby mezi snímkem připnutí a uložením nemohl vzniknout nový odkaz na snímek.
+    try:
+        with DEVICES_LOCK:
+            pinned = DeviceRegistry(root / "state" / "devices.json").frame_ids(now=now.timestamp())
+            fid = frames.put(png_to_bitmap(png), pinned=pinned)
+    except Exception as err:  # noqa: BLE001
+        log.error("storing frame failed, keeping last frame: %s", err)
         return False
     rendered_path.write_text(json.dumps(comparable, ensure_ascii=False), encoding="utf-8")
     log.info("frame %s", fid)

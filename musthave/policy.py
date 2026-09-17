@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -42,11 +43,12 @@ class Decision:
 
 
 VOLTAGE_PLAUSIBLE_MIN = 3.0  # V; ESP32-C3 pod ~3 V neběží, nižší hodnota je chyba měření (ADC), ne stav baterie
+VOLTAGE_PLAUSIBLE_MAX = 5.5  # V; nad USB napětím už jde jen o chybu měření nebo podvrženou hlavičku
 
 
 def plausible_voltage(voltage: float | None) -> float | None:
-    """Napětí z hlavičky Battery-Voltage, nebo None, když je fyzikálně nemožné (např. poloviční čtení ADC)."""
-    if voltage is None or voltage < VOLTAGE_PLAUSIBLE_MIN:
+    """Napětí z hlavičky Battery-Voltage, nebo None, když je fyzikálně nemožné (poloviční čtení ADC, NaN, inf)."""
+    if voltage is None or not math.isfinite(voltage) or not VOLTAGE_PLAUSIBLE_MIN <= voltage <= VOLTAGE_PLAUSIBLE_MAX:
         return None
     return voltage
 
@@ -109,10 +111,8 @@ def decide(
         return full()
     if state.partials_since_full >= cfg.full_after_partials:
         return full()
-    # Plný refresh proti duchům po hodině / v noci má smysl jen po nějakých částečných překresleních;
-    # panel, který se vrací po výpadku bez partial od posledního full, dostane napřed partial.
-    if state.partials_since_full > 0 and now.timestamp() - state.last_full_at >= cfg.full_every_s:
+    if now.timestamp() - state.last_full_at >= cfg.full_every_s:
         return full()
-    if state.partials_since_full > 0 and state.last_full_at < _night_boundary(now, cfg.night_full_at):
+    if state.last_full_at < _night_boundary(now, cfg.night_full_at):
         return full()
     return Decision("partial", full_mode, sleep_mode, interval)
