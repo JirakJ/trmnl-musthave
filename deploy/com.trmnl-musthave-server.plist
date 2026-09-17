@@ -6,6 +6,8 @@
   <string>com.trmnl-musthave-server</string>
   <key>ProgramArguments</key>
   <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-i</string>
     <string>__ROOT__/.venv/bin/python</string>
     <string>-m</string>
     <string>musthave</string>
