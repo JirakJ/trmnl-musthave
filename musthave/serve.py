@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import logging
-import socket
 import threading
 import time
 from datetime import datetime
@@ -28,12 +27,6 @@ from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 
 log = logging.getLogger("musthave.serve")
-
-DAYS_CS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
-
-
-def czech_date(now: datetime) -> str:
-    return f"{DAYS_CS[now.weekday()]} {now.day}. {now.month}. {now.year}"
 
 
 def _push(settings, http, state: State, payload: dict, now: datetime, last_weather) -> State:
@@ -69,10 +62,12 @@ def tick(
     http = http or Http()
     now = now or datetime.now(ZoneInfo(settings.timezone))
     state = load_state(settings.state_path)
-    renderer = renderer or (lambda payload: render_screen(payload, settings.chrome, "png"))
+    renderer = renderer or (lambda payload: render_screen(payload, settings.chrome, "png", headless=settings.headless))
 
+    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
+    fw = seen.fw_version if seen and seen.fw_version else ""
     try:
-        payload, last_weather = collect(http, settings, now, state.last_weather)
+        payload, last_weather = collect(http, settings, now, state.last_weather, fw=fw)
     except Exception as err:  # noqa: BLE001
         log.error("collect failed, keeping last frame: %s", err)
         return False
@@ -82,10 +77,6 @@ def tick(
 
     # Stejná data → stejný snímek. Čas "aktualizováno" sám o sobě změnu nedělá, jinak by zařízení
     # překreslovalo každou minutu jen kvůli hodinám v hlavičce.
-    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
-    payload["fw"] = seen.fw_version if seen and seen.fw_version else ""
-    payload["host"] = settings.label or socket.gethostname().split(".")[0]
-    payload["date"] = czech_date(now)
     rendered_path = frames.dir / "last_payload.json"
     comparable = {k: v for k, v in payload.items() if k != "updated"}
     try:

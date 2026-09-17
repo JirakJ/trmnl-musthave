@@ -23,7 +23,8 @@ No Twitch or Kick developer application is needed.
 ## Configuration
 
 `config.toml` holds the city, coordinates, the streamer lists and the send cadence. Streamers are plain string arrays;
-edit the file and redeploy.
+edit the file and redeploy. Host-specific values (`[server] port`, `label`, `headless`) go into a git-ignored
+`config.local.toml` next to it, which overrides the same tables and is never overwritten by `deploy/install.sh`.
 
 ```toml
 [streams]

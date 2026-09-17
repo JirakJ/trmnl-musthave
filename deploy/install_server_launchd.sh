@@ -27,7 +27,7 @@ launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST"
 sleep 6
 IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo '<ip>')"
-PORT="$(grep -E '^port' "$ROOT/config.toml" | head -1 | sed 's/[^0-9]//g')"
+PORT="$(python3 -c 'import tomllib,pathlib;c=tomllib.loads(pathlib.Path("config.toml").read_text());l=pathlib.Path("config.local.toml");c.get("server",{}).update(tomllib.loads(l.read_text()).get("server",{})) if l.exists() else None;print(c.get("server",{}).get("port",8080))' 2>/dev/null || echo 8080)"
 echo "→ $LABEL běží; zařízení nastav na http://$IP:${PORT:-8080} (captive portál → Advanced → Custom Server)"
 curl -s -m 5 "http://127.0.0.1:${PORT:-8080}/api/display" || true
 echo

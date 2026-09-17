@@ -94,12 +94,12 @@ def make_server(
                              "image_url": image_url, "message": "Must-have BYOS"})
 
         def _display(self) -> None:
-            mac = self.headers.get("ID") or self.client_address[0]
+            mac = self.headers.get("ID") or ""
             reported = self.headers.get("X-Frame-Id") or None
             voltage = self._header_float("Battery-Voltage")
             fw = (self.headers.get("FW-Version") or "").strip()
             now = now_fn()
-            state = devices.get(mac)
+            state = devices.get(mac) if mac else DeviceState()
             state.frame_id = reported if reported and frames.get(reported) is not None else None
             state.last_seen_at = now.timestamp()
             if fw:
@@ -119,7 +119,7 @@ def make_server(
             elif d.action == "full":
                 state.partials_since_full = 0
                 state.last_full_at = now.timestamp()
-            if self.headers.get("Access-Token"):  # jen skutečný firmware; ruční curl testy registr neplní
+            if mac and self.headers.get("Access-Token") == API_KEY:  # jen zařízení spárované přes /api/setup
                 devices.save(mac, state)
 
             base = self._base()

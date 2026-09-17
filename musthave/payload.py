@@ -7,6 +7,11 @@ import json
 from datetime import datetime
 
 MAX_BYTES = 4500
+DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
+
+
+def czech_date(now: datetime) -> str:
+    return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
 GAME_MAX = 22
 GAME_MIN = 12
 
@@ -40,10 +45,13 @@ def _section(source: dict, game_max: int) -> dict:
     return out
 
 
-def build_payload(weather: dict, kick: dict, twitch: dict, now: datetime) -> dict:
+def build_payload(weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "") -> dict:
     for game_max in (GAME_MAX, GAME_MIN):
         payload = {
             "updated": now.strftime("%H:%M"),
+            "date": czech_date(now),
+            "host": host,
+            "fw": fw,
             "weather": copy.deepcopy(weather),
             "kick": _section(kick, game_max),
             "twitch": _section(twitch, game_max),

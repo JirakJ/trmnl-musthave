@@ -104,3 +104,19 @@ def test_server_policy_defaults(tmp_path):
     write(tmp_path, CONFIG)
     s = load_settings(tmp_path, env={}, secret_lookup=None)
     assert s.policy.power == "auto" and s.policy.full_after_partials == 12
+
+
+def test_config_local_overlay_overrides_tables(tmp_path):
+    """config.local.toml (negitované, rsync ho vynechá) přepisuje host-specifické klíče: port, label."""
+    write(tmp_path, CONFIG + '\n[server]\nport = 8080\nlabel = ""\n')
+    (tmp_path / "config.local.toml").write_text('[server]\nport = 8085\nlabel = "RPi"\n', encoding="utf-8")
+    s = load_settings(tmp_path, env={}, secret_lookup=None)
+    assert s.server_port == 8085 and s.label == "RPi"
+    assert s.location_name == "Jihlava"  # ostatní tabulky zůstávají
+
+
+def test_headless_mode_setting(tmp_path):
+    write(tmp_path, CONFIG + '\n[server]\nheadless = "old"\n')
+    assert load_settings(tmp_path, env={}, secret_lookup=None).headless == "old"
+    write(tmp_path, CONFIG)
+    assert load_settings(tmp_path, env={}, secret_lookup=None).headless == "auto"

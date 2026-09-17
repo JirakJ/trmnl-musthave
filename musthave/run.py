@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import socket
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -23,7 +24,7 @@ from .weather import fetch_weather, with_fallback
 log = logging.getLogger("musthave")
 
 
-def collect(http, settings: Settings, now: datetime, last_weather: dict | None = None) -> tuple[dict, dict | None]:
+def collect(http, settings: Settings, now: datetime, last_weather: dict | None = None, fw: str = "") -> tuple[dict, dict | None]:
     """Paralelně stáhne všechny zdroje a poskládá payload. Vrací (payload, záznam posledního dobrého počasí).
 
     Twitch Client-ID se při 400 obnoví za běhu; při výpadku Open-Meteo se použije poslední dobré počasí (≤ 3 h)."""
@@ -34,7 +35,8 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         weather, kick = weather_f.result(), kick_f.result()
         twitch, _ = twitch_f.result()
     weather, remembered = with_fallback(weather, last_weather, now.timestamp())
-    return build_payload(weather, kick, twitch, now), remembered
+    host = settings.label or socket.gethostname().split(".")[0]
+    return build_payload(weather, kick, twitch, now, host=host, fw=fw), remembered
 
 
 def run(
