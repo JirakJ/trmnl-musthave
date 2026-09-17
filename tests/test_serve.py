@@ -132,3 +132,11 @@ def test_tick_puts_last_seen_firmware_version_into_payload(tmp_path):
     seen = {}
     tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 16, 17, 20), renderer=lambda p: seen.update(p) or png(1), push=False)
     assert seen["fw"] == "2.0.2"
+
+
+def test_tick_puts_host_label_and_czech_date_into_payload(tmp_path):
+    (tmp_path / "config.toml").write_text(CONFIG + 'label = "RPi"\n', encoding="utf-8")
+    frames = FrameStore(tmp_path / "state" / "frames")
+    seen = {}
+    tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 17, 10, 20), renderer=lambda p: seen.update(p) or png(1), push=False)
+    assert seen["host"] == "RPi" and seen["date"] == "Čtvrtek 17. 9. 2026"

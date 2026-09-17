@@ -28,6 +28,8 @@ plugin_setting_id = 479481
 # BYOS režim (`python3 -m musthave serve`): zařízení ukazuje na http://<ip-tohoto-stroje>:port
 # (captive portál → Advanced → Custom Server). Obrazovka se renderuje lokálně každých refresh_seconds.
 port = 8080
+# Zdroj zobrazený v hlavičce obrazovky (prázdné = hostname stroje)
+label = "MacBook"
 # Napájení: auto (podle napětí baterie, >= usb_voltage_min = USB) | usb | battery
 power = "auto"
 usb_voltage_min = 4.15

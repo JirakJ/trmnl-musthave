@@ -29,13 +29,15 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
   .mh-head { display: flex; justify-content: space-between; align-items: baseline; width: 100%; border-bottom: 2px solid #000; padding-bottom: 3px; }
   .mh-head-title { font-size: 13px; font-weight: 700; letter-spacing: .12em; }
   .mh-head-meta { font-size: 13px; font-weight: 500; }
+  .mh-head-date { font-size: 13px; font-weight: 600; }
   .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
 </style>
 
 <div class="layout layout--col gap--small mh">
 
   <div class="mh-head">
-    <span class="mh-head-title">MUST-HAVE</span>
+    <span class="mh-head-title">MUST-HAVE{% if host != "" %} · {{ host }}{% endif %}</span>
+    <span class="mh-head-date">{{ date }}</span>
     <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw != "" %} · FW {{ fw }}{% endif %}</span>
   </div>
 

@@ -36,6 +36,7 @@ class Settings:
     image_format: str = "png"
     policy: PolicyConfig = PolicyConfig()
     firmware_dir: Path | None = None
+    label: str = ""   # zdroj zobrazený na obrazovce (RPi / MacBook); prázdné = hostname
 
 
 def read_dotenv(path: Path) -> dict[str, str]:
@@ -121,4 +122,5 @@ def load_settings(
             align_lead_s=int(server.get("align_lead_seconds", 10)),
         ),
         firmware_dir=root / "deploy" / "firmware",
+        label=str(server.get("label", "")),
     )

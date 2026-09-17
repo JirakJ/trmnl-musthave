@@ -8,7 +8,7 @@ import pytest
 TEMPLATES = Path(__file__).parent.parent / "templates"
 LAYOUTS = ["full", "half_horizontal", "half_vertical", "quadrant"]
 # kořenové proměnné z payloadu + smyčkové/lokální proměnné použité v šablonách (first = assign)
-ALLOWED_ROOTS = {"updated", "weather", "kick", "twitch", "item", "day", "forloop", "first", "fw"}
+ALLOWED_ROOTS = {"updated", "weather", "kick", "twitch", "item", "day", "forloop", "first", "fw", "host", "date"}
 VAR_RE = re.compile(r"{{\s*([a-zA-Z_]\w*)")
 TAG_VAR_RE = re.compile(r"{%\s*(?:if|unless|elsif|for\s+\w+\s+in)\s+([a-zA-Z_]\w*)")
 
