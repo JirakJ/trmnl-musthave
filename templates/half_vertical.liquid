@@ -16,6 +16,8 @@
   .mh-viewers { flex: 0 0 auto; min-width: 40px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .mh-badge { flex: 0 0 auto; padding: 0 5px; font-size: 10px; font-weight: 700; border: 1.5px solid #000; }
   .mh-badge--live { background: #000; color: #fff; }
+  .mh-countdown { width: 100%; margin-top: auto; border-top: 2px solid #000; padding-top: 2px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-countdown b { font-variant-numeric: tabular-nums; }
   .mh-offline { display: block; font-size: 10.5px; color: #555; padding: 1px 0; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 <div class="layout layout--col mh">
@@ -37,6 +39,7 @@
   <div class="mh-row"><span class="mh-name">{{ item.n }}</span><span class="mh-game">{{ item.g }}</span><span class="mh-viewers">{{ item.v }}</span><span class="mh-badge mh-badge--live">LIVE</span></div>
   {% endif %}{% endfor %}
   <div class="mh-offline">{% assign first = true %}{% for item in twitch.items %}{% unless item.live %}{% if first %}offline: {% else %}, {% endif %}{{ item.n }}{% assign first = false %}{% endunless %}{% endfor %}</div>
+  {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {{ event.label }}{% endfor %}</div>{% endif %}
 </div>
 <div class="title_bar">
   <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />

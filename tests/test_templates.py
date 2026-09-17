@@ -8,7 +8,7 @@ import pytest
 TEMPLATES = Path(__file__).parent.parent / "templates"
 LAYOUTS = ["full", "half_horizontal", "half_vertical", "quadrant"]
 # kořenové proměnné z payloadu + smyčkové/lokální proměnné použité v šablonách (first = assign)
-ALLOWED_ROOTS = {"updated", "weather", "kick", "twitch", "item", "day", "forloop", "first", "fw", "host", "date"}
+ALLOWED_ROOTS = {"updated", "weather", "kick", "twitch", "item", "day", "forloop", "first", "fw", "host", "date", "countdowns", "event"}
 VAR_RE = re.compile(r"{{\s*([a-zA-Z_]\w*)")
 TAG_VAR_RE = re.compile(r"{%\s*(?:if|unless|elsif|for\s+\w+\s+in)\s+([a-zA-Z_]\w*)")
 
@@ -30,3 +30,9 @@ def test_template_uses_only_payload_variables(layout):
 def test_template_has_no_emoji(layout):
     src = (TEMPLATES / f"{layout}.liquid").read_text(encoding="utf-8")
     assert not re.search(r"[\U0001F300-\U0001FAFF☀-➿]", src)
+
+
+@pytest.mark.parametrize("layout", ["full", "half_horizontal", "half_vertical"])
+def test_template_shows_countdowns(layout):
+    src = (TEMPLATES / f"{layout}.liquid").read_text(encoding="utf-8")
+    assert "for event in countdowns" in src

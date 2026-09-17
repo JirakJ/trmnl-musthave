@@ -4,6 +4,11 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-17
+
+### Added
+- Countdown strip: `[[countdown]]` entries in `config.toml` (name + date) render "days to go" at the bottom of the full layout and as a line in the half layouts; past events drop out automatically, the release day shows `DNES`. Ships with GTA VI (2026-11-19) and World of Warcraft: Forever (2026-11-04).
+
 ## [1.1.0] - 2026-09-17
 
 ### Added

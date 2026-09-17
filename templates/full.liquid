@@ -1,19 +1,25 @@
 {% comment %}
 TRMNL Must-have – full layout (800x480, 1-bit)
 Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}]},
-          kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}
+          kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}, countdowns[{n,days,label,d}]
 {% endcomment %}
 <style>
   .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
-  .mh .columns { align-items: flex-start; }
+  .mh .columns { align-items: flex-start; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  .mh-countdown { display: flex; align-items: center; gap: 18px; width: 100%; min-width: 0; overflow: hidden; flex-shrink: 0; margin-top: auto; border-top: 2px solid #000; padding-top: 3px; }
+  .mh-countdown-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+  .mh-event { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+  .mh-event-name { font-size: 14px; font-weight: 700; }
+  .mh-event-days { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .mh-event-date { font-size: 11px; color: #555; }
   .mh .column { overflow: hidden; justify-content: flex-start; align-items: stretch; }
-  .mh-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #000; min-height: 31px; flex-shrink: 0; }
+  .mh-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; border-bottom: 1px solid #000; min-height: 28px; flex-shrink: 0; }
   .mh-row:last-child { border-bottom: none; }
   .mh-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
   .mh-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mh-game { font-size: 11px; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mh-viewers { flex: 0 0 auto; font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; font-size: 14px; font-weight: 600; }
-  .mh-off { min-height: 23px; padding: 1px 0; }
+  .mh-off { min-height: 21px; padding: 1px 0; }
   .mh-off .mh-name { font-weight: 400; font-size: 13px; color: #555; }
   .mh-badge { flex: 0 0 auto; display: inline-block; min-width: 40px; text-align: center; padding: 1px 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; border: 1.5px solid #000; }
   .mh-badge--live { background: #000; color: #fff; }
@@ -111,5 +117,17 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
       {% endif %}
     </div>
   </div>
+
+  {% if countdowns.size > 0 %}
+  <div class="mh-countdown">
+    <span class="mh-countdown-title">ODPOČET</span>
+    {% for event in countdowns %}
+    <span class="mh-event">
+      <span class="mh-event-name">{{ event.n }}</span>
+      <span class="mh-event-days">{{ event.label }}</span>{% if event.days > 0 %}<span class="mh-event-date">· {{ event.d }}</span>{% endif %}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
 
 </div>

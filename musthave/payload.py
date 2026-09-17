@@ -4,20 +4,49 @@ from __future__ import annotations
 
 import copy
 import json
+from collections.abc import Iterable
 from datetime import datetime
+
+from .config import Countdown
 
 MAX_BYTES = 4500
 DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
 
 
-def czech_date(now: datetime) -> str:
-    return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
 GAME_MAX = 22
 GAME_MIN = 12
+NAME_MAX = 18  # název události v odpočtu
 
 
 class PayloadTooLarge(Exception):
     pass
+
+
+def czech_date(now: datetime) -> str:
+    return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
+
+
+def days_label(days: int) -> str:
+    """Česká podoba zbývajících dnů: DNES / 1 den / 2–4 dny / 5+ dní."""
+    if days == 0:
+        return "DNES"
+    if days == 1:
+        return "1 den"
+    return f"{days} dny" if days < 5 else f"{days} dní"
+
+
+def countdown_items(events: Iterable[Countdown], now: datetime) -> list[dict]:
+    """Dny do každé události (kalendářní, v časové zóně `now`), seřazené od nejbližší; minulé se vynechají.
+
+    Položka: n (název, zkrácený), days, label (hotový český text), d (den. měsíc.)."""
+    today = now.date()
+    items = []
+    for event in events:
+        days = (event.date - today).days
+        if days >= 0:
+            items.append({"n": _truncate(event.name, NAME_MAX), "days": days, "label": days_label(days),
+                          "d": f"{event.date.day}. {event.date.month}."})
+    return sorted(items, key=lambda i: i["days"])
 
 
 def encode(payload: dict) -> bytes:
@@ -45,7 +74,10 @@ def _section(source: dict, game_max: int) -> dict:
     return out
 
 
-def build_payload(weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "") -> dict:
+def build_payload(
+    weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "",
+    countdowns: Iterable[Countdown] = (),
+) -> dict:
     for game_max in (GAME_MAX, GAME_MIN):
         payload = {
             "updated": now.strftime("%H:%M"),
@@ -55,6 +87,7 @@ def build_payload(weather: dict, kick: dict, twitch: dict, now: datetime, host: 
             "weather": copy.deepcopy(weather),
             "kick": _section(kick, game_max),
             "twitch": _section(twitch, game_max),
+            "countdowns": countdown_items(countdowns, now),
         }
         if len(encode(payload)) <= MAX_BYTES:
             return payload

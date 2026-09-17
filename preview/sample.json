@@ -118,5 +118,19 @@
    }
   ],
   "live": 5
- }
+ },
+ "countdowns": [
+  {
+   "n": "WoW Forever",
+   "days": 48,
+   "label": "48 dní",
+   "d": "4. 11."
+  },
+  {
+   "n": "GTA VI",
+   "days": 63,
+   "label": "63 dní",
+   "d": "19. 11."
+  }
+ ]
 }

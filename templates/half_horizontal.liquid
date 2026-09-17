@@ -11,6 +11,8 @@
   .mh-live-head { font-size: 11px; font-weight: 700; letter-spacing: .08em; margin-bottom: 2px; }
   .mh-chip { display: inline-block; margin: 0 4px 3px 0; padding: 0 5px; border: 1.5px solid #000; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .mh-chip b { background: #000; color: #fff; padding: 0 4px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .mh-countdown { margin-top: 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-countdown b { font-variant-numeric: tabular-nums; }
 </style>
 <div class="layout mh">
   <div class="mh-wrap">
@@ -35,6 +37,7 @@
       <div class="mh-live-line">{% for item in kick.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if kick.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
       <div class="mh-live-head" style="margin-top:6px">TWITCH · {{ twitch.live }} LIVE</div>
       <div class="mh-live-line">{% for item in twitch.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if twitch.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
+      {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {{ event.label }}{% endfor %}</div>{% endif %}
     </div>
   </div>
 </div>

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Mapping
 
@@ -14,6 +15,27 @@ from .policy import PolicyConfig
 
 KEYCHAIN_SERVICE = "trmnl-musthave"
 SECRET_NAMES = ("TRMNL_WEBHOOK_UUID", "TRMNL_USER_API_KEY")
+
+
+@dataclass(frozen=True)
+class Countdown:
+    """Událost, ke které obrazovka odpočítává dny (např. vydání hry)."""
+
+    name: str
+    date: date
+
+
+def parse_countdowns(raw: list) -> tuple[Countdown, ...]:
+    """[[countdown]] name + date; TOML datum přijde jako date/datetime, řetězec jako ISO 'YYYY-MM-DD'."""
+    out = []
+    for entry in raw:
+        value = entry["date"]
+        if isinstance(value, datetime):
+            value = value.date()
+        elif not isinstance(value, date):
+            value = date.fromisoformat(str(value))
+        out.append(Countdown(str(entry["name"]).strip(), value))
+    return tuple(out)
 
 
 @dataclass(frozen=True)
@@ -38,6 +60,7 @@ class Settings:
     firmware_dir: Path | None = None
     label: str = ""   # zdroj zobrazený na obrazovce (RPi / MacBook); prázdné = hostname
     headless: str = "auto"  # auto | new | old – režim headless Chromia (RPi s Chromium 126 potřebuje old)
+    countdowns: tuple[Countdown, ...] = ()  # [[countdown]] – odpočty dnů do událostí
 
 
 def read_dotenv(path: Path) -> dict[str, str]:
@@ -89,6 +112,8 @@ def load_settings(
         for table, values in tomllib.loads(local.read_text(encoding="utf-8")).items():
             if isinstance(values, dict):
                 raw.setdefault(table, {}).update(values)
+            elif isinstance(values, list) and isinstance(raw.get(table), list):
+                raw[table] = raw[table] + values  # pole tabulek ([[countdown]]) se spojují, nepřepisují
             else:
                 raw[table] = values
     merged = {**read_dotenv(root / ".env"), **env}
@@ -132,4 +157,5 @@ def load_settings(
         firmware_dir=root / "deploy" / "firmware",
         label=str(server.get("label", "")),
         headless=str(server.get("headless", "auto")),
+        countdowns=parse_countdowns(raw.get("countdown", [])),
     )
