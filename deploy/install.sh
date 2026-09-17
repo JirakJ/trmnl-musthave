@@ -30,5 +30,9 @@ ssh "$HOST" "sudo cp '$REMOTE_DIR/deploy/trmnl-musthave.service' /etc/systemd/sy
   && sudo systemctl enable --now 'trmnl-musthave@$REMOTE_USER.timer' \
   && sudo systemctl start --no-block 'trmnl-musthave@$REMOTE_USER.service'"
 
+echo "→ firewall: povolit port serveru jen pro LAN (ufw, pokud je aktivní)"
+PORT="$(grep -E '^port' "$ROOT/config.toml" | head -1 | sed 's/[^0-9]//g')"
+ssh "$HOST" "sudo ufw status 2>/dev/null | grep -q 'Status: active' && sudo ufw allow from 192.168.0.0/24 to any port ${PORT:-8080} proto tcp comment 'trmnl-musthave BYOS server (LAN only)' >/dev/null || true"
+
 echo "→ stav"
 ssh "$HOST" "systemctl list-timers 'trmnl-musthave@*' --no-pager; sleep 3; journalctl -u 'trmnl-musthave@$REMOTE_USER' -n 5 --no-pager"
