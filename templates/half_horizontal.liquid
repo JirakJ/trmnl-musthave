@@ -37,7 +37,7 @@
       <div class="mh-live-line">{% for item in kick.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if kick.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
       <div class="mh-live-head" style="margin-top:6px">TWITCH · {{ twitch.live }} LIVE</div>
       <div class="mh-live-line">{% for item in twitch.items %}{% if item.live %}<span class="mh-chip">{{ item.n }}<b>{{ item.v }}</b></span>{% endif %}{% endfor %}{% if twitch.live == 0 %}<span class="description">nikdo nevysílá</span>{% endif %}</div>
-      {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {% if event.days == 0 %}DNES{% else %}za {{ event.days }} {% if event.days == 1 %}den{% elsif event.days < 5 %}dny{% else %}dní{% endif %}{% endif %}{% endfor %}</div>{% endif %}
+      {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {{ event.label }}{% endfor %}</div>{% endif %}
     </div>
   </div>
 </div>

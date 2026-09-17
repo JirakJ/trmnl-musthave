@@ -135,3 +135,14 @@ def test_countdowns_parsed_from_array_of_tables(tmp_path):
 def test_countdowns_default_empty(tmp_path):
     write(tmp_path, CONFIG)
     assert load_settings(tmp_path, env={}).countdowns == ()
+
+
+def test_local_overlay_extends_countdown_list(tmp_path):
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    write(tmp_path, CONFIG + '\n[[countdown]]\nname = "GTA VI"\ndate = 2026-11-19\n')
+    (tmp_path / "config.local.toml").write_text('[[countdown]]\nname = "Birthday"\ndate = 2026-10-01\n', encoding="utf-8")
+    s = load_settings(tmp_path, env={})
+    assert s.countdowns == (Countdown("GTA VI", date(2026, 11, 19)), Countdown("Birthday", date(2026, 10, 1)))

@@ -87,8 +87,8 @@ def test_countdowns_days_left_and_short_date():
     events = [Countdown("GTA VI", date(2026, 11, 19)), Countdown("WoW Forever", date(2026, 11, 4))]
     p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 23, 59), countdowns=events)
     assert p["countdowns"] == [
-        {"n": "WoW Forever", "days": 48, "d": "4. 11."},
-        {"n": "GTA VI", "days": 63, "d": "19. 11."},
+        {"n": "WoW Forever", "days": 48, "label": "48 dní", "d": "4. 11."},
+        {"n": "GTA VI", "days": 63, "label": "63 dní", "d": "19. 11."},
     ]
 
 
@@ -99,9 +99,22 @@ def test_countdowns_skip_past_events_and_keep_release_day():
 
     events = [Countdown("Old", date(2026, 9, 16)), Countdown("Today", date(2026, 9, 17))]
     p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 8, 0), countdowns=events)
-    assert p["countdowns"] == [{"n": "Today", "days": 0, "d": "17. 9."}]
+    assert p["countdowns"] == [{"n": "Today", "days": 0, "label": "DNES", "d": "17. 9."}]
 
 
 def test_countdowns_default_empty():
     p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17))
     assert p["countdowns"] == []
+
+
+def test_countdown_labels_use_czech_plurals_and_truncate_names():
+    from datetime import date
+
+    from musthave.config import Countdown
+    from musthave.payload import NAME_MAX, days_label
+
+    assert [days_label(n) for n in (0, 1, 2, 4, 5, 63)] == ["DNES", "1 den", "2 dny", "4 dny", "5 dní", "63 dní"]
+    events = [Countdown("Some Very Long Game Title: Deluxe Ultimate Edition", date(2026, 9, 18))]
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17), countdowns=events)
+    n = p["countdowns"][0]["n"]
+    assert len(n) == NAME_MAX and n.endswith("…")

@@ -112,6 +112,8 @@ def load_settings(
         for table, values in tomllib.loads(local.read_text(encoding="utf-8")).items():
             if isinstance(values, dict):
                 raw.setdefault(table, {}).update(values)
+            elif isinstance(values, list) and isinstance(raw.get(table), list):
+                raw[table] = raw[table] + values  # pole tabulek ([[countdown]]) se spojují, nepřepisují
             else:
                 raw[table] = values
     merged = {**read_dotenv(root / ".env"), **env}

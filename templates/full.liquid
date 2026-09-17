@@ -1,14 +1,14 @@
 {% comment %}
 TRMNL Must-have – full layout (800x480, 1-bit)
 Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}]},
-          kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}, countdowns[{n,days,d}]
+          kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}, countdowns[{n,days,label,d}]
 {% endcomment %}
 <style>
   .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
   .mh .columns { align-items: flex-start; flex: 1 1 auto; min-height: 0; overflow: hidden; }
-  .mh-countdown { display: flex; align-items: center; gap: 18px; width: 100%; flex-shrink: 0; margin-top: auto; border-top: 2px solid #000; padding-top: 3px; }
+  .mh-countdown { display: flex; align-items: center; gap: 18px; width: 100%; min-width: 0; overflow: hidden; flex-shrink: 0; margin-top: auto; border-top: 2px solid #000; padding-top: 3px; }
   .mh-countdown-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; }
-  .mh-event { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+  .mh-event { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; flex-shrink: 0; }
   .mh-event-name { font-size: 14px; font-weight: 700; }
   .mh-event-days { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
   .mh-event-date { font-size: 11px; color: #555; }
@@ -124,7 +124,7 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
     {% for event in countdowns %}
     <span class="mh-event">
       <span class="mh-event-name">{{ event.n }}</span>
-      {% if event.days == 0 %}<span class="mh-event-days">DNES</span>{% else %}<span class="mh-event-days">{{ event.days }}</span><span class="mh-event-date">{% if event.days == 1 %}den{% elsif event.days < 5 %}dny{% else %}dní{% endif %} · {{ event.d }}</span>{% endif %}
+      <span class="mh-event-days">{{ event.label }}</span>{% if event.days > 0 %}<span class="mh-event-date">· {{ event.d }}</span>{% endif %}
     </span>
     {% endfor %}
   </div>

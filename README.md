@@ -40,7 +40,8 @@ date = 2026-11-19
 ```
 
 Each `[[countdown]]` entry becomes a "days to go" item (calendar days in the configured timezone, sorted by the
-nearest date). The release day shows `DNES`; past events disappear on their own.
+nearest date). The release day shows `DNES`; past events disappear on their own. `[[countdown]]` entries in
+`config.local.toml` are appended to the base list.
 
 Secrets never live in the repo. The collector reads them, in this order of precedence, from the environment,
 from a git-ignored `.env` file in the project root, or (macOS) from the Keychain:

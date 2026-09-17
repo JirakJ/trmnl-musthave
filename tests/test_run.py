@@ -134,4 +134,4 @@ def test_collect_passes_countdowns_from_settings(tmp_path):
     (tmp_path / "config.toml").write_text(CONFIG + '\n[[countdown]]\nname = "GTA VI"\ndate = 2026-11-19\n', encoding="utf-8")
     settings = load_settings(tmp_path, env)
     payload, _ = collect(FakeHttp(), settings, datetime(2026, 9, 17, 10, 0))
-    assert payload["countdowns"] == [{"n": "GTA VI", "days": 63, "d": "19. 11."}]
+    assert payload["countdowns"] == [{"n": "GTA VI", "days": 63, "label": "63 dní", "d": "19. 11."}]

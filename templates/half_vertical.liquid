@@ -39,7 +39,7 @@
   <div class="mh-row"><span class="mh-name">{{ item.n }}</span><span class="mh-game">{{ item.g }}</span><span class="mh-viewers">{{ item.v }}</span><span class="mh-badge mh-badge--live">LIVE</span></div>
   {% endif %}{% endfor %}
   <div class="mh-offline">{% assign first = true %}{% for item in twitch.items %}{% unless item.live %}{% if first %}offline: {% else %}, {% endif %}{{ item.n }}{% assign first = false %}{% endunless %}{% endfor %}</div>
-  {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {% if event.days == 0 %}DNES{% else %}za {{ event.days }} {% if event.days == 1 %}den{% elsif event.days < 5 %}dny{% else %}dní{% endif %}{% endif %}{% endfor %}</div>{% endif %}
+  {% if countdowns.size > 0 %}<div class="mh-countdown">{% for event in countdowns %}{% unless forloop.first %} · {% endunless %}<b>{{ event.n }}</b> {{ event.label }}{% endfor %}</div>{% endif %}
 </div>
 <div class="title_bar">
   <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />

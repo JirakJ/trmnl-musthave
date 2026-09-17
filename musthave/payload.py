@@ -15,6 +15,7 @@ DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota
 
 GAME_MAX = 22
 GAME_MIN = 12
+NAME_MAX = 18  # název události v odpočtu
 
 
 class PayloadTooLarge(Exception):
@@ -25,14 +26,26 @@ def czech_date(now: datetime) -> str:
     return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
 
 
+def days_label(days: int) -> str:
+    """Česká podoba zbývajících dnů: DNES / 1 den / 2–4 dny / 5+ dní."""
+    if days == 0:
+        return "DNES"
+    if days == 1:
+        return "1 den"
+    return f"{days} dny" if days < 5 else f"{days} dní"
+
+
 def countdown_items(events: Iterable[Countdown], now: datetime) -> list[dict]:
-    """Dny do každé události (kalendářní, v časové zóně `now`), seřazené od nejbližší; minulé se vynechají."""
+    """Dny do každé události (kalendářní, v časové zóně `now`), seřazené od nejbližší; minulé se vynechají.
+
+    Položka: n (název, zkrácený), days, label (hotový český text), d (den. měsíc.)."""
     today = now.date()
     items = []
     for event in events:
         days = (event.date - today).days
         if days >= 0:
-            items.append({"n": event.name, "days": days, "d": f"{event.date.day}. {event.date.month}."})
+            items.append({"n": _truncate(event.name, NAME_MAX), "days": days, "label": days_label(days),
+                          "d": f"{event.date.day}. {event.date.month}."})
     return sorted(items, key=lambda i: i["days"])
 
 
