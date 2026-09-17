@@ -19,7 +19,8 @@ from urllib.parse import parse_qs, urlparse
 from .devices import DeviceRegistry
 from .diff import area, dirty_tiles, encode_regions, merge_rects
 from .frames import FrameStore
-from .policy import Decision, DeviceState, PolicyConfig, decide
+from .devices import LOCK as DEVICES_LOCK
+from .policy import Decision, DeviceState, PolicyConfig, decide, plausible_voltage
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +50,8 @@ def make_server(
 ) -> ThreadingHTTPServer:
     now_fn = clock or datetime.now
     fw_dir = Path(firmware_dir) if firmware_dir else None
+
+    implausible_seen: set[str] = set()  # MAC zařízení, jejichž poslední hlášené napětí bylo nevěrohodné
 
     def firmware_version() -> str | None:
         if not fw_dir:
@@ -94,9 +97,13 @@ def make_server(
                              "image_url": image_url, "message": "Must-have BYOS"})
 
         def _display(self) -> None:
+            with DEVICES_LOCK:  # čtení stavu → rozhodnutí → zápis atomicky vůči ostatním vláknům a render smyčce
+                self._display_locked()
+
+        def _display_locked(self) -> None:
             mac = self.headers.get("ID") or ""
             reported = self.headers.get("X-Frame-Id") or None
-            voltage = self._header_float("Battery-Voltage")
+            raw_voltage = self._header_float("Battery-Voltage")
             fw = (self.headers.get("FW-Version") or "").strip()
             now = now_fn()
             state = devices.get(mac) if mac else DeviceState()
@@ -104,7 +111,30 @@ def make_server(
             state.last_seen_at = now.timestamp()
             if fw:
                 state.fw_version = fw
+            # Nevěrohodné napětí (mimo 3–5.5 V, NaN; např. poloviční čtení ADC) politika nevidí (→ baterie,
+            # bezpečný režim) a neukládá se; varuje se jen při přechodu věrohodné → nevěrohodné.
+            voltage = plausible_voltage(raw_voltage)
+            if voltage is None and raw_voltage is not None and mac not in implausible_seen:
+                log.warning("display %s: implausible Battery-Voltage %s (last plausible %s), treating as battery",
+                            mac, raw_voltage, state.voltage)
+            if voltage is None:
+                implausible_seen.add(mac)
+            else:
+                implausible_seen.discard(mac)
+                state.voltage = voltage
             latest = frames.latest()
+
+            target_version = firmware_version()
+            update = bool(target_version and fw and fw != target_version)
+            # OTA čekací režim: soubor deploy/firmware/ota_wait (CLI `ota-mode on`). Zařízení nekreslí a ptá se
+            # každých 20 s, dokud nedostane update; po ohlášení cílové verze se režim sám vypne. Rozhoduje se
+            # před politikou, aby čekací dotazy nepočítaly falešné partial/full.
+            ota_flag = fw_dir / "ota_wait" if fw_dir else None
+            ota_wait = bool(ota_flag and ota_flag.exists())
+            if ota_wait and target_version and fw == target_version:
+                ota_flag.unlink(missing_ok=True)
+                ota_wait = False
+                log.info("ota-mode finished: %s reports %s", mac, fw)
 
             rects_area = None
             if latest and state.frame_id and state.frame_id != latest:
@@ -114,27 +144,19 @@ def make_server(
                     rects_area = area(rects) if rects else 0
 
             d = decide(state, state.frame_id, latest, rects_area, voltage, now, cfg)
-            if d.action == "partial":
+            if ota_wait:
+                d = Decision("none", d.full_mode, d.sleep_mode, 20)
+            elif d.action == "partial":
                 state.partials_since_full += 1
             elif d.action == "full":
                 state.partials_since_full = 0
                 state.last_full_at = now.timestamp()
+            if d.action != "none":
+                state.target_frame_id = latest  # po překreslení bude na panelu; FrameStore ho nesmí vyřadit
             if mac and self.headers.get("Access-Token") == API_KEY:  # jen zařízení spárované přes /api/setup
                 devices.save(mac, state)
 
             base = self._base()
-            target_version = firmware_version()
-            update = bool(target_version and fw and fw != target_version)
-            # OTA čekací režim: soubor deploy/firmware/ota_wait (CLI `ota-mode on`). Zařízení nekreslí a ptá se
-            # každých 20 s, dokud nedostane update; po ohlášení cílové verze se režim sám vypne.
-            ota_flag = fw_dir / "ota_wait" if fw_dir else None
-            ota_wait = bool(ota_flag and ota_flag.exists())
-            if ota_wait and target_version and fw == target_version:
-                ota_flag.unlink(missing_ok=True)
-                ota_wait = False
-                log.info("ota-mode finished: %s reports %s", mac, fw)
-            if ota_wait:
-                d = Decision("none", d.full_mode, d.sleep_mode, 20)
             resp = {
                 "status": 0, "action": d.action, "frame_id": latest or "",
                 "full_url": f"{base}/frames/{latest}.png" if latest else "",
@@ -148,7 +170,7 @@ def make_server(
                 "reset_firmware": False, "special_function": "none",
                 "ota_wait": ota_wait,
             }
-            log.info("display %s frame=%s → %s (batt %s, fw %s, %s/%ss)", mac, reported, d.action, voltage, fw,
+            log.info("display %s frame=%s → %s (batt %s, fw %s, %s/%ss)", mac, reported, d.action, raw_voltage, fw,
                      d.sleep_mode, d.refresh_rate)
             self._json(200, resp)
 

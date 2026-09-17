@@ -1,6 +1,6 @@
 """BYOS režim v1: HTTP server pro zařízení + smyčka, která každých N sekund stáhne data a vyrenderuje snímek.
 
-Snímky jdou do FrameStore (poslední 8 bitmap); server z nich počítá regiony pro částečný refresh.
+Snímky jdou do FrameStore (posledních 8 bitmap + snímky připnuté zařízeními); server z nich počítá regiony pro částečný refresh.
 Když stažení nebo render selže, zůstane poslední snímek a zařízení dostane `none`.
 Volitelně se data pošlou i do TRMNL cloudu (webhook), aby šlo kdykoli přepnout zpět.
 """
@@ -17,7 +17,7 @@ from typing import Callable, Mapping
 from zoneinfo import ZoneInfo
 
 from .config import load_settings
-from .devices import DeviceRegistry
+from .devices import LOCK as DEVICES_LOCK, DeviceRegistry
 from .frames import FrameStore, png_to_bitmap
 from .http import Http
 from .run import collect
@@ -64,7 +64,8 @@ def tick(
     state = load_state(settings.state_path)
     renderer = renderer or (lambda payload: render_screen(payload, settings.chrome, "png", headless=settings.headless))
 
-    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
+    devices = DeviceRegistry(root / "state" / "devices.json")
+    seen = devices.latest_seen()
     fw = seen.fw_version if seen and seen.fw_version else ""
     try:
         payload, last_weather = collect(http, settings, now, state.last_weather, fw=fw)
@@ -89,9 +90,18 @@ def tick(
 
     try:
         png = renderer(payload)
-        fid = frames.put(png_to_bitmap(png))
     except Exception as err:  # noqa: BLE001
         log.error("render failed, keeping last frame: %s", err)
+        return False
+    # Snímky, které zařízení zobrazují nebo právě dostala, přežijí limit úložiště (partial místo full, když se
+    # zařízení vrátí po výpadku). Registr se čte až po renderu (ten trvá sekundy) a pod stejným zámkem, pod
+    # kterým HTTP vlákno rozhoduje, aby mezi snímkem připnutí a uložením nemohl vzniknout nový odkaz na snímek.
+    try:
+        with DEVICES_LOCK:
+            pinned = DeviceRegistry(root / "state" / "devices.json").frame_ids(now=now.timestamp())
+            fid = frames.put(png_to_bitmap(png), pinned=pinned)
+    except Exception as err:  # noqa: BLE001
+        log.error("storing frame failed, keeping last frame: %s", err)
         return False
     rendered_path.write_text(json.dumps(comparable, ensure_ascii=False), encoding="utf-8")
     log.info("frame %s", fid)

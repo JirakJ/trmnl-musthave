@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -11,10 +12,12 @@ from .frames import HEIGHT, WIDTH
 @dataclass
 class DeviceState:
     frame_id: str | None = None          # snímek, o kterém víme, že je na panelu (z X-Frame-Id)
+    target_frame_id: str | None = None   # snímek, který jsme zařízení naposledy poslali (bude na panelu po překreslení)
     partials_since_full: int = 0
     last_full_at: float | None = None    # timestamp posledního plného refreshe
     last_seen_at: float | None = None
     fw_version: str | None = None
+    voltage: float | None = None         # poslední věrohodné napětí baterie (V)
 
 
 @dataclass(frozen=True)
@@ -39,9 +42,21 @@ class Decision:
     refresh_rate: int
 
 
+VOLTAGE_PLAUSIBLE_MIN = 3.0  # V; ESP32-C3 pod ~3 V neběží, nižší hodnota je chyba měření (ADC), ne stav baterie
+VOLTAGE_PLAUSIBLE_MAX = 5.5  # V; nad USB napětím už jde jen o chybu měření nebo podvrženou hlavičku
+
+
+def plausible_voltage(voltage: float | None) -> float | None:
+    """Napětí z hlavičky Battery-Voltage, nebo None, když je fyzikálně nemožné (poloviční čtení ADC, NaN, inf)."""
+    if voltage is None or not math.isfinite(voltage) or not VOLTAGE_PLAUSIBLE_MIN <= voltage <= VOLTAGE_PLAUSIBLE_MAX:
+        return None
+    return voltage
+
+
 def power_mode(voltage: float | None, cfg: PolicyConfig) -> str:
     if cfg.power in ("usb", "battery"):
         return cfg.power
+    voltage = plausible_voltage(voltage)
     return "usb" if voltage is not None and voltage >= cfg.usb_voltage_min else "battery"
 
 

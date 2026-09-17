@@ -72,3 +72,18 @@ def test_store_survives_restart(tmp_path):
     fid = FrameStore(tmp_path / "frames").put(bm)
     again = FrameStore(tmp_path / "frames")
     assert again.latest() == fid and again.get(fid) == bm
+
+
+def test_store_keeps_pinned_frames_beyond_the_limit(tmp_path):
+    """Snímek, který zařízení stále zobrazuje, se nevyřadí – po delším výpadku pak stačí partial místo full."""
+    store = FrameStore(tmp_path / "frames", keep=3)
+    ids = []
+    for i in range(6):
+        ids.append(store.put(png_to_bitmap(synthetic_png(rect=(i * 8, 0, i * 8 + 7, 7))), pinned={ids[0]} if ids else ()))
+    assert store.get(ids[0]) is not None          # připnutý přežil
+    assert store.get(ids[1]) is None and store.get(ids[2]) is None
+    assert all(store.get(i) is not None for i in ids[3:])
+    assert store.latest() == ids[-1]
+    # bez připnutí se při dalším put vyřadí i on
+    store.put(png_to_bitmap(synthetic_png(rect=(64, 0, 71, 7))))
+    assert store.get(ids[0]) is None

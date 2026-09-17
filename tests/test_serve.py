@@ -140,3 +140,36 @@ def test_tick_puts_host_label_and_czech_date_into_payload(tmp_path):
     seen = {}
     tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 17, 10, 20), renderer=lambda p: seen.update(p) or png(1), push=False)
     assert seen["host"] == "RPi" and seen["date"] == "Čtvrtek 17. 9. 2026"
+
+
+def test_tick_keeps_the_frames_a_device_shows_or_was_sent(tmp_path):
+    """Server během výpadku renderuje dál; snímek na panelu (i ten právě poslaný) musí přežít limit úložiště,
+    nepřipnuté starší snímky se vyřazují dál."""
+    import io
+
+    from PIL import Image, ImageDraw
+
+    from musthave.devices import DeviceRegistry
+    from musthave.policy import DeviceState
+
+    def rect_png(i):
+        img = Image.new("1", (800, 480), 1)
+        ImageDraw.Draw(img).rectangle((i * 8, 0, i * 8 + 7, 7), fill=0)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
+
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames", keep=2)
+    seeded: list[str] = []
+    for i in (50, 51, 52):  # seed bez vyřazování (limit 2 by první snímek vyhodil hned); x = 400.. je na plátně
+        seeded.append(frames.put(png_to_bitmap(rect_png(i)), pinned=seeded))
+    shown, sent, stale = seeded
+    now = datetime(2026, 9, 17, 10, 0)
+    DeviceRegistry(tmp_path / "state" / "devices.json").save(
+        "AA:BB", DeviceState(frame_id=shown, target_frame_id=sent, last_seen_at=now.timestamp() - 60))
+    for i in range(5):  # 5 nových různých snímků > keep
+        tick(tmp_path, frames, http=FakeHttp(), env={}, now=now, renderer=lambda p, i=i: rect_png(i), push=False)
+        (frames.dir / "last_payload.json").write_text(json.dumps({"n": i}), encoding="utf-8")  # vynutit nový render
+    assert frames.get(shown) is not None and frames.get(sent) is not None
+    assert frames.get(stale) is None  # nepřipnutý → vyřazen

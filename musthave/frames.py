@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 import io
 import json
 import os
@@ -44,7 +45,8 @@ def frame_id(bitmap: bytes) -> str:
 
 
 class FrameStore:
-    """Posledních `keep` bitmap na disku: <dir>/<id>.bmp1 + index.json (pořadí vložení)."""
+    """Bitmapy na disku: <dir>/<id>.bmp1 + index.json (pořadí vložení). Drží posledních `keep` snímků plus
+    všechny právě připnuté (`put(pinned=...)`); FIFO vyřazování se týká jen nepřipnutých."""
 
     def __init__(self, directory: Path, keep: int = 8) -> None:
         self.dir = Path(directory)
@@ -65,7 +67,9 @@ class FrameStore:
         tmp.write_text(json.dumps(self._ids), encoding="utf-8")
         os.replace(tmp, self.index)
 
-    def put(self, bitmap: bytes) -> str:
+    def put(self, bitmap: bytes, pinned: Iterable[str] = ()) -> str:
+        """Uloží snímek; vyřazuje nejstarší nad `keep`, ale nikdy ty v `pinned` (snímky, které zařízení stále
+        zobrazují – po delším výpadku serveru pak jde poslat partial místo celého snímku)."""
         if len(bitmap) != BITMAP_BYTES:
             raise ValueError(f"bitmap must be {BITMAP_BYTES} B, got {len(bitmap)}")
         fid = frame_id(bitmap)
@@ -76,8 +80,10 @@ class FrameStore:
             tmp.write_bytes(bitmap)
             os.replace(tmp, self.dir / f"{fid}.bmp1")
         self._ids.append(fid)
-        while len(self._ids) > self.keep:
-            old = self._ids.pop(0)
+        pinned = set(pinned)
+        evictable = [i for i in self._ids if i not in pinned]
+        for old in evictable[: max(0, len(evictable) - self.keep)]:
+            self._ids.remove(old)
             try:
                 (self.dir / f"{old}.bmp1").unlink()
             except FileNotFoundError:
