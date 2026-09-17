@@ -37,6 +37,7 @@ class Settings:
     policy: PolicyConfig = PolicyConfig()
     firmware_dir: Path | None = None
     label: str = ""   # zdroj zobrazený na obrazovce (RPi / MacBook); prázdné = hostname
+    headless: str = "auto"  # auto | new | old – režim headless Chromia (RPi s Chromium 126 potřebuje old)
 
 
 def read_dotenv(path: Path) -> dict[str, str]:
@@ -83,6 +84,13 @@ def load_settings(
     if secret_lookup is _USE_KEYCHAIN:
         secret_lookup = keychain_lookup  # rozhoduje se až za běhu, aby šlo v testech nahradit
     raw = tomllib.loads((root / "config.toml").read_text(encoding="utf-8"))
+    local = root / "config.local.toml"  # host-specifické hodnoty (port, label…), negitované a rsync je vynechá
+    if local.exists():
+        for table, values in tomllib.loads(local.read_text(encoding="utf-8")).items():
+            if isinstance(values, dict):
+                raw.setdefault(table, {}).update(values)
+            else:
+                raw[table] = values
     merged = {**read_dotenv(root / ".env"), **env}
     for name in SECRET_NAMES:
         if not merged.get(name) and secret_lookup is not None:
@@ -123,4 +131,5 @@ def load_settings(
         ),
         firmware_dir=root / "deploy" / "firmware",
         label=str(server.get("label", "")),
+        headless=str(server.get("headless", "auto")),
     )

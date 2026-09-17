@@ -45,7 +45,7 @@ def get(url, headers=None):
 
 
 def display(env, frame_id=None, voltage="3.9", fw="2.0.0"):
-    headers = {"ID": MAC, "Access-Token": "x", "Battery-Voltage": voltage, "FW-Version": fw}
+    headers = {"ID": MAC, "Access-Token": "musthave-local", "Battery-Voltage": voltage, "FW-Version": fw}
     if frame_id is not None:
         headers["X-Frame-Id"] = frame_id
     return json.loads(get(env["base"] + "/api/display", headers)[2])
@@ -156,3 +156,15 @@ def test_requests_without_access_token_are_not_registered(env):
     env["frames"].put(WHITE)
     get(env["base"] + "/api/display", {"ID": "FA:KE:00:00:00:01", "FW-Version": "9.9.9"})
     assert env["devices"].get("FA:KE:00:00:00:01").fw_version is None
+
+
+def test_only_requests_with_the_issued_api_key_update_the_registry(env):
+    from musthave.server import API_KEY
+
+    env["frames"].put(WHITE)
+    get(env["base"] + "/api/display", {"ID": "FA:KE:00:00:00:02", "Access-Token": "wrong", "FW-Version": "9.9.9"})
+    assert env["devices"].get("FA:KE:00:00:00:02").fw_version is None
+    get(env["base"] + "/api/display", {"ID": "FA:KE:00:00:00:03", "Access-Token": API_KEY, "FW-Version": "9.9.9"})
+    assert env["devices"].get("FA:KE:00:00:00:03").fw_version == "9.9.9"
+    get(env["base"] + "/api/display", {"Access-Token": API_KEY, "FW-Version": "9.9.9"})  # bez ID → neregistrovat
+    assert all(not mac.startswith("127.") for mac in env["devices"]._data)

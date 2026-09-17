@@ -19,7 +19,9 @@ privátního TRMNL pluginu. Vykreslení dělá TRMNL z Liquid šablon v `templat
 ## Konfigurace
 
 `config.toml` – město, souřadnice, seznamy profilů, kadence a `[trmnl] plugin_setting_id` (číselné id instance
-privátního pluginu). Profily jsou pole řetězců, přidání/odebrání = editace souboru a znovu nasadit.
+privátního pluginu). Profily jsou pole řetězců, přidání/odebrání = editace souboru a znovu nasadit. Hodnoty specifické
+pro stroj (`[server] port`, `label`, `headless`) patří do negitovaného `config.local.toml` vedle něj; přepisuje stejné
+tabulky a `deploy/install.sh` ho nikdy nepřepíše.
 
 Tajemství nejsou v repu. Sběrač je čte v tomto pořadí z prostředí, z negitovaného `.env` v kořenu projektu, nebo
 (macOS) z Keychain:

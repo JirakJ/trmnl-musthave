@@ -36,9 +36,9 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
 <div class="layout layout--col gap--small mh">
 
   <div class="mh-head">
-    <span class="mh-head-title">MUST-HAVE{% if host != "" %} · {{ host }}{% endif %}</span>
+    <span class="mh-head-title">MUST-HAVE{% if host %} · {{ host }}{% endif %}</span>
     <span class="mh-head-date">{{ date }}</span>
-    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw != "" %} · FW {{ fw }}{% endif %}</span>
+    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw %} · FW {{ fw }}{% endif %}</span>
   </div>
 
   <div class="mh-weather">

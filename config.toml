@@ -29,7 +29,7 @@ plugin_setting_id = 479481
 # (captive portál → Advanced → Custom Server). Obrazovka se renderuje lokálně každých refresh_seconds.
 port = 8080
 # Zdroj zobrazený v hlavičce obrazovky (prázdné = hostname stroje)
-label = "MacBook"
+label = ""
 # Napájení: auto (podle napětí baterie, >= usb_voltage_min = USB) | usb | battery
 power = "auto"
 usb_voltage_min = 4.15

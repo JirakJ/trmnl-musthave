@@ -54,8 +54,7 @@ def check_screenshot(img) -> None:
     znamená šedou/šumovou výplň nedokresleného viewportu (viděno na Chromium 126 na Raspberry Pi)."""
     if img.size != (WIDTH, HEIGHT):
         raise RenderError(f"screenshot size {img.size}, expected {(WIDTH, HEIGHT)}")
-    gray = img.convert("L")
-    band = gray.crop((0, HEIGHT - 60, WIDTH, HEIGHT))
+    band = img.crop((0, HEIGHT - 60, WIDTH, HEIGHT)).convert("L")
     hist = band.histogram()
     dark = sum(hist[:200])
     ratio = dark / (band.size[0] * band.size[1])
@@ -100,6 +99,8 @@ def find_chrome(explicit: str | None = None) -> str:
 
 def screenshot(html: str, chrome: str, timeout_s: int = 60, headless: str = "new") -> bytes:
     """Vyrenderuje HTML v headless Chrome na 800×480 PNG. headless: "new" | "old" (Chromium ≤ 126 na RPi)."""
+    if headless not in ("new", "old"):
+        raise ValueError(f"headless must be new|old, got {headless!r}")
     with tempfile.TemporaryDirectory(prefix="musthave-") as tmp:
         page = Path(tmp) / "page.html"
         out = Path(tmp) / "shot.png"
@@ -116,11 +117,14 @@ def screenshot(html: str, chrome: str, timeout_s: int = 60, headless: str = "new
         return out.read_bytes()
 
 
-def to_device_image(png: bytes, fmt: str = "png") -> bytes:
-    """Převede screenshot na 1-bit 800×480 PNG (výchozí) nebo BMP, jak čeká firmware TRMNL."""
+def to_device_image(png, fmt: str = "png") -> bytes:
+    """Převede screenshot (bytes PNG nebo otevřený PIL obrázek) na 1-bit 800×480 PNG nebo BMP pro firmware TRMNL.
+
+    Přeškálování jiné velikosti tu zůstává pro přímé použití (testy, jiné zdroje); render_screen() takový
+    screenshot zamítne dřív (check_screenshot), protože oříznutý viewport by na e-inku vypadal rozbitě."""
     from PIL import Image  # Pillow
 
-    img = Image.open(io.BytesIO(png)).convert("L")
+    img = (png if isinstance(png, Image.Image) else Image.open(io.BytesIO(png))).convert("L")
     if img.size != (WIDTH, HEIGHT):
         img = img.resize((WIDTH, HEIGHT), Image.Resampling.LANCZOS)
     mono = img.convert("1")  # Floyd–Steinberg dithering, jako TRMNL cloud pro 1-bit
@@ -132,24 +136,29 @@ def to_device_image(png: bytes, fmt: str = "png") -> bytes:
     return buf.getvalue()
 
 
-def render_screen(payload: dict, chrome: str | None = None, fmt: str = "png", layout: str = "full") -> bytes:
+def render_screen(payload: dict, chrome: str | None = None, fmt: str = "png", layout: str = "full", headless: str = "auto") -> bytes:
     """Celý řetězec payload → bytes obrázku pro zařízení."""
     html = build_html(render_markup(payload, layout), layout)
     exe = find_chrome(chrome)
     from PIL import Image
 
     global _preferred_headless
-    last_err: Exception | None = None
-    order = (_preferred_headless, "old" if _preferred_headless == "new" else "new")
+    if headless in ("new", "old"):
+        order: tuple[str, ...] = (headless,)  # nastaveno v config.toml – žádné zkoušení
+    else:
+        order = (_preferred_headless, "old" if _preferred_headless == "new" else "new")
+    last_err: Exception = RenderError("render failed")
     for mode in order:
-        png = screenshot(html, exe, headless=mode)
         try:
-            check_screenshot(Image.open(io.BytesIO(png)))
+            png = screenshot(html, exe, headless=mode)
+            img = Image.open(io.BytesIO(png))
+            check_screenshot(img)
             if mode != _preferred_headless:
                 log.info("headless mode %s works here, using it from now on", mode)
                 _preferred_headless = mode
-            return to_device_image(png, fmt)
-        except RenderError as err:  # Chromium 126 (RPi) v novém headless režimu ořízne viewport na 390 px
+            return to_device_image(img, fmt)
+        except (RenderError, RuntimeError, OSError, subprocess.SubprocessError) as err:
+            # Chromium 126 (RPi) v novém headless režimu ořízne viewport na 390 px; pád/timeout Chromia zkusíme v druhém režimu
             log.warning("screenshot rejected (%s mode): %s", mode, err)
             last_err = err
-    raise last_err or RenderError("render failed")
+    raise last_err

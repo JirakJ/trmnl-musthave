@@ -67,3 +67,13 @@ def test_oversized_payload_raises():
     kick = {"ok": True, "items": [item(f"S{i}", True, 1, "Game" * 5, "12:34") for i in range(200)]}
     with pytest.raises(PayloadTooLarge):
         build_payload(WEATHER, kick, {"ok": True, "items": []}, datetime(2026, 9, 16))
+
+
+def test_build_payload_adds_date_host_and_fw():
+    from musthave.payload import czech_date
+
+    assert czech_date(datetime(2026, 9, 17, 10, 20)) == "Čtvrtek 17. 9. 2026"
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 10, 20), host="RPi", fw="2.0.6")
+    assert p["date"] == "Čtvrtek 17. 9. 2026" and p["host"] == "RPi" and p["fw"] == "2.0.6"
+    q = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17, 10, 20))
+    assert q["host"] == "" and q["fw"] == "" and q["date"] == "Čtvrtek 17. 9. 2026"

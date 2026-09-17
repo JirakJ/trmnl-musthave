@@ -77,3 +77,43 @@ def test_render_screen_falls_back_to_old_headless_when_new_is_truncated(monkeypa
     assert Image.open(io.BytesIO(out)).size == (800, 480)
     screen.render_screen({"updated": "2"})
     assert calls[2:] == ["old"]  # podruhé rovnou fungující režim
+
+
+def test_render_screen_falls_back_when_chromium_crashes_in_preferred_mode(monkeypatch):
+    from musthave import screen
+    from PIL import ImageDraw
+
+    def good_png():
+        img = Image.new("L", (800, 480), 255)
+        ImageDraw.Draw(img).rectangle((10, 10, 100, 40), fill=0)
+        buf = io.BytesIO(); img.save(buf, format="PNG"); return buf.getvalue()
+
+    calls = []
+
+    def shot(html, exe, timeout_s=60, headless="new"):
+        calls.append(headless)
+        if headless == "new":
+            raise RuntimeError("chrome screenshot failed (1): crashed")
+        return good_png()
+
+    monkeypatch.setattr(screen, "render_markup", lambda payload, layout="full": "<b>x</b>")
+    monkeypatch.setattr(screen, "find_chrome", lambda explicit=None: "/bin/chrome")
+    monkeypatch.setattr(screen, "screenshot", shot)
+    monkeypatch.setattr(screen, "_preferred_headless", "new")
+    out = screen.render_screen({"updated": "1"})
+    assert calls == ["new", "old"] and Image.open(io.BytesIO(out)).size == (800, 480)
+
+
+def test_render_screen_respects_configured_headless_mode(monkeypatch):
+    from musthave import screen
+    from PIL import ImageDraw
+
+    img = Image.new("L", (800, 480), 255); ImageDraw.Draw(img).rectangle((10, 10, 100, 40), fill=0)
+    buf = io.BytesIO(); img.save(buf, format="PNG"); good = buf.getvalue()
+    calls = []
+    monkeypatch.setattr(screen, "render_markup", lambda payload, layout="full": "<b>x</b>")
+    monkeypatch.setattr(screen, "find_chrome", lambda explicit=None: "/bin/chrome")
+    monkeypatch.setattr(screen, "screenshot", lambda html, exe, timeout_s=60, headless="new": (calls.append(headless), good)[1])
+    monkeypatch.setattr(screen, "_preferred_headless", "new")
+    screen.render_screen({"updated": "1"}, headless="old")
+    assert calls == ["old"]
