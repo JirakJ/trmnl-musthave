@@ -63,6 +63,8 @@ def check_screenshot(img) -> None:
         raise RenderError(f"bottom band {ratio:.0%} non-white – unfinished render")
 
 
+_preferred_headless = "new"  # po prvním úspěšném fallbacku si zapamatuje "old"
+
 CHROME_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -136,11 +138,16 @@ def render_screen(payload: dict, chrome: str | None = None, fmt: str = "png", la
     exe = find_chrome(chrome)
     from PIL import Image
 
+    global _preferred_headless
     last_err: Exception | None = None
-    for mode in ("new", "old"):
+    order = (_preferred_headless, "old" if _preferred_headless == "new" else "new")
+    for mode in order:
         png = screenshot(html, exe, headless=mode)
         try:
             check_screenshot(Image.open(io.BytesIO(png)))
+            if mode != _preferred_headless:
+                log.info("headless mode %s works here, using it from now on", mode)
+                _preferred_headless = mode
             return to_device_image(png, fmt)
         except RenderError as err:  # Chromium 126 (RPi) v novém headless režimu ořízne viewport na 390 px
             log.warning("screenshot rejected (%s mode): %s", mode, err)

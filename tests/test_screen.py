@@ -71,6 +71,9 @@ def test_render_screen_falls_back_to_old_headless_when_new_is_truncated(monkeypa
     monkeypatch.setattr(screen, "render_markup", lambda payload, layout="full": "<b>x</b>")
     monkeypatch.setattr(screen, "find_chrome", lambda explicit=None: "/bin/chrome")
     monkeypatch.setattr(screen, "screenshot", lambda html, exe, timeout_s=60, headless="new": (calls.append(headless), fake_png(390 if headless == "new" else 480))[1])
+    monkeypatch.setattr(screen, "_preferred_headless", "new")
     out = screen.render_screen({"updated": "1"})
     assert calls == ["new", "old"]
     assert Image.open(io.BytesIO(out)).size == (800, 480)
+    screen.render_screen({"updated": "2"})
+    assert calls[2:] == ["old"]  # podruhé rovnou fungující režim
