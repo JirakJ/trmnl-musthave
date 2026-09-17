@@ -31,6 +31,10 @@ class DeviceRegistry:
         tmp.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
         os.replace(tmp, self.path)
 
+    def frame_ids(self) -> set[str]:
+        """Snímky, které některé zařízení právě zobrazuje (FrameStore je nesmí vyřadit)."""
+        return {st.frame_id for st in (self.get(mac) for mac in self._data) if st.frame_id}
+
     def latest_seen(self) -> DeviceState | None:
         best = None
         for mac in self._data:

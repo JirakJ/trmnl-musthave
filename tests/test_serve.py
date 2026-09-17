@@ -140,3 +140,19 @@ def test_tick_puts_host_label_and_czech_date_into_payload(tmp_path):
     seen = {}
     tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 17, 10, 20), renderer=lambda p: seen.update(p) or png(1), push=False)
     assert seen["host"] == "RPi" and seen["date"] == "Čtvrtek 17. 9. 2026"
+
+
+def test_tick_keeps_the_frame_a_device_still_shows(tmp_path):
+    """Server během výpadku renderuje dál; snímek na panelu zařízení musí přežít limit úložiště."""
+    from musthave.devices import DeviceRegistry
+    from musthave.policy import DeviceState
+
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames", keep=2)
+    shown = frames.put(png_to_bitmap(png(1)))
+    DeviceRegistry(tmp_path / "state" / "devices.json").save("AA:BB", DeviceState(frame_id=shown, last_seen_at=1.0))
+    for i in range(4):
+        data = {"n": i}
+        tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 17, 10, i), renderer=lambda p, i=i: png(0) if i % 2 else png(1), push=False)
+        (frames.dir / "last_payload.json").write_text(json.dumps(data), encoding="utf-8")  # vynutit nový render
+    assert frames.get(shown) is not None

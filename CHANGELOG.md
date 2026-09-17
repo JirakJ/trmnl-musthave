@@ -4,6 +4,9 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+### Added
+- Frames still shown by a device survive the FrameStore limit (`FrameStore.put(..., pinned=...)`, `DeviceRegistry.frame_ids()`), so after a long server outage the device gets a partial refresh instead of a full-screen flash. Pairs with firmware 2.0.7 outage recovery.
+
 ## [1.2.0] - 2026-09-17
 
 ### Added

@@ -64,7 +64,8 @@ def tick(
     state = load_state(settings.state_path)
     renderer = renderer or (lambda payload: render_screen(payload, settings.chrome, "png", headless=settings.headless))
 
-    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
+    devices = DeviceRegistry(root / "state" / "devices.json")
+    seen = devices.latest_seen()
     fw = seen.fw_version if seen and seen.fw_version else ""
     try:
         payload, last_weather = collect(http, settings, now, state.last_weather, fw=fw)
@@ -89,7 +90,8 @@ def tick(
 
     try:
         png = renderer(payload)
-        fid = frames.put(png_to_bitmap(png))
+        # snímky, které zařízení stále zobrazují, přežijí limit úložiště (partial i po dlouhém výpadku)
+        fid = frames.put(png_to_bitmap(png), pinned=devices.frame_ids())
     except Exception as err:  # noqa: BLE001
         log.error("render failed, keeping last frame: %s", err)
         return False
