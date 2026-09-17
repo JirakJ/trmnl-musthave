@@ -45,7 +45,8 @@ def frame_id(bitmap: bytes) -> str:
 
 
 class FrameStore:
-    """Posledních `keep` bitmap na disku: <dir>/<id>.bmp1 + index.json (pořadí vložení)."""
+    """Bitmapy na disku: <dir>/<id>.bmp1 + index.json (pořadí vložení). Drží posledních `keep` snímků plus
+    všechny právě připnuté (`put(pinned=...)`); FIFO vyřazování se týká jen nepřipnutých."""
 
     def __init__(self, directory: Path, keep: int = 8) -> None:
         self.dir = Path(directory)
@@ -79,8 +80,8 @@ class FrameStore:
             tmp.write_bytes(bitmap)
             os.replace(tmp, self.dir / f"{fid}.bmp1")
         self._ids.append(fid)
-        keep = set(pinned)
-        evictable = [i for i in self._ids if i not in keep]
+        pinned = set(pinned)
+        evictable = [i for i in self._ids if i not in pinned]
         for old in evictable[: max(0, len(evictable) - self.keep)]:
             self._ids.remove(old)
             try:

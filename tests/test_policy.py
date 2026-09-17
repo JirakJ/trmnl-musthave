@@ -94,3 +94,14 @@ def test_align_disabled_keeps_interval():
     cfg = PolicyConfig(power="usb", align_minutes=0)
     d = decide(DeviceState(), None, None, None, 4.8, NOW, cfg)
     assert d.refresh_rate == 60
+
+
+def test_implausible_voltage_is_ignored():
+    """ESP32-C3 neběží pod ~3 V; nižší hodnota je chyba měření (ADC), ne stav baterie."""
+    from musthave.policy import VOLTAGE_PLAUSIBLE_MIN, plausible_voltage
+
+    assert VOLTAGE_PLAUSIBLE_MIN == 3.0
+    assert plausible_voltage(2.05) is None and plausible_voltage(0.0) is None and plausible_voltage(None) is None
+    assert plausible_voltage(3.0) == 3.0 and plausible_voltage(4.75) == 4.75
+    assert power_mode(2.05, CFG) == "battery"
+    assert power_mode(2.37, PolicyConfig(usb_voltage_min=2.0)) == "battery"  # ani nízký práh implausibilní hodnotu nepustí

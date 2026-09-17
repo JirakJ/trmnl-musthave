@@ -1,6 +1,6 @@
 """BYOS režim v1: HTTP server pro zařízení + smyčka, která každých N sekund stáhne data a vyrenderuje snímek.
 
-Snímky jdou do FrameStore (poslední 8 bitmap); server z nich počítá regiony pro částečný refresh.
+Snímky jdou do FrameStore (posledních 8 bitmap + snímky připnuté zařízeními); server z nich počítá regiony pro částečný refresh.
 Když stažení nebo render selže, zůstane poslední snímek a zařízení dostane `none`.
 Volitelně se data pošlou i do TRMNL cloudu (webhook), aby šlo kdykoli přepnout zpět.
 """
@@ -90,8 +90,10 @@ def tick(
 
     try:
         png = renderer(payload)
-        # snímky, které zařízení stále zobrazují, přežijí limit úložiště (partial i po dlouhém výpadku)
-        fid = frames.put(png_to_bitmap(png), pinned=devices.frame_ids())
+        # Snímky, které zařízení zobrazují nebo právě dostala, přežijí limit úložiště (partial místo full po
+        # výpadku). Registr se čte znovu až tady: render trvá sekundy a HTTP vlákno ho mezitím mění.
+        pinned = DeviceRegistry(root / "state" / "devices.json").frame_ids(now=now.timestamp())
+        fid = frames.put(png_to_bitmap(png), pinned=pinned)
     except Exception as err:  # noqa: BLE001
         log.error("render failed, keeping last frame: %s", err)
         return False

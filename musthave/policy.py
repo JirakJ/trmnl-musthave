@@ -11,10 +11,12 @@ from .frames import HEIGHT, WIDTH
 @dataclass
 class DeviceState:
     frame_id: str | None = None          # snímek, o kterém víme, že je na panelu (z X-Frame-Id)
+    target_frame_id: str | None = None   # snímek, který jsme zařízení naposledy poslali (bude na panelu po překreslení)
     partials_since_full: int = 0
     last_full_at: float | None = None    # timestamp posledního plného refreshe
     last_seen_at: float | None = None
     fw_version: str | None = None
+    voltage: float | None = None         # poslední věrohodné napětí baterie (V)
 
 
 @dataclass(frozen=True)
@@ -39,9 +41,20 @@ class Decision:
     refresh_rate: int
 
 
+VOLTAGE_PLAUSIBLE_MIN = 3.0  # V; ESP32-C3 pod ~3 V neběží, nižší hodnota je chyba měření (ADC), ne stav baterie
+
+
+def plausible_voltage(voltage: float | None) -> float | None:
+    """Napětí z hlavičky Battery-Voltage, nebo None, když je fyzikálně nemožné (např. poloviční čtení ADC)."""
+    if voltage is None or voltage < VOLTAGE_PLAUSIBLE_MIN:
+        return None
+    return voltage
+
+
 def power_mode(voltage: float | None, cfg: PolicyConfig) -> str:
     if cfg.power in ("usb", "battery"):
         return cfg.power
+    voltage = plausible_voltage(voltage)
     return "usb" if voltage is not None and voltage >= cfg.usb_voltage_min else "battery"
 
 
@@ -96,8 +109,10 @@ def decide(
         return full()
     if state.partials_since_full >= cfg.full_after_partials:
         return full()
-    if now.timestamp() - state.last_full_at >= cfg.full_every_s:
+    # Plný refresh proti duchům po hodině / v noci má smysl jen po nějakých částečných překresleních;
+    # panel, který se vrací po výpadku bez partial od posledního full, dostane napřed partial.
+    if state.partials_since_full > 0 and now.timestamp() - state.last_full_at >= cfg.full_every_s:
         return full()
-    if state.last_full_at < _night_boundary(now, cfg.night_full_at):
+    if state.partials_since_full > 0 and state.last_full_at < _night_boundary(now, cfg.night_full_at):
         return full()
     return Decision("partial", full_mode, sleep_mode, interval)

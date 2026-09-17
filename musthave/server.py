@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, urlparse
 from .devices import DeviceRegistry
 from .diff import area, dirty_tiles, encode_regions, merge_rects
 from .frames import FrameStore
-from .policy import Decision, DeviceState, PolicyConfig, decide
+from .policy import Decision, DeviceState, PolicyConfig, decide, plausible_voltage
 
 log = logging.getLogger(__name__)
 
@@ -104,6 +104,14 @@ def make_server(
             state.last_seen_at = now.timestamp()
             if fw:
                 state.fw_version = fw
+            # Nevěrohodné napětí (< 3 V, např. poloviční čtení ADC v jednom OTA slotu) nesmí přepnout režim
+            # spánku; použije se poslední věrohodná hodnota zařízení, jinak výchozí (baterie).
+            if plausible_voltage(voltage) is None:
+                if voltage is not None:
+                    log.warning("display %s: implausible Battery-Voltage %s, using last plausible %s", mac, voltage, state.voltage)
+                voltage = state.voltage
+            else:
+                state.voltage = voltage
             latest = frames.latest()
 
             rects_area = None
@@ -119,6 +127,8 @@ def make_server(
             elif d.action == "full":
                 state.partials_since_full = 0
                 state.last_full_at = now.timestamp()
+            if d.action != "none" and latest:
+                state.target_frame_id = latest  # po překreslení bude na panelu; FrameStore ho nesmí vyřadit
             if mac and self.headers.get("Access-Token") == API_KEY:  # jen zařízení spárované přes /api/setup
                 devices.save(mac, state)
 

@@ -168,3 +168,43 @@ def test_only_requests_with_the_issued_api_key_update_the_registry(env):
     assert env["devices"].get("FA:KE:00:00:00:03").fw_version == "9.9.9"
     get(env["base"] + "/api/display", {"Access-Token": API_KEY, "FW-Version": "9.9.9"})  # bez ID → neregistrovat
     assert all(not mac.startswith("127.") for mac in env["devices"]._data)
+
+
+def test_implausible_voltage_falls_back_to_last_plausible_reading(tmp_path, caplog):
+    """Zařízení po OTA hlásí 2.05 V (poloviční ADC); server použije poslední věrohodné napětí a varuje."""
+    import logging
+
+    frames = FrameStore(tmp_path / "frames")
+    frames.put(WHITE)
+    devices = DeviceRegistry(tmp_path / "d.json")
+    srv = make_server(frames, devices, PolicyConfig(align_minutes=0), port=0)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        base = f"http://127.0.0.1:{srv.server_port}"
+        hdr = {"ID": MAC, "Access-Token": "musthave-local", "FW-Version": "2.0.6"}
+        d = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "4.75"})[2])
+        assert d["sleep_mode"] == "light" and devices.get(MAC).voltage == 4.75
+        with caplog.at_level(logging.WARNING, logger="musthave.server"):
+            d = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "2.05"})[2])
+        assert d["sleep_mode"] == "light"                      # poslední věrohodné napětí = USB
+        assert devices.get(MAC).voltage == 4.75                 # implausibilní hodnota se neukládá
+        assert "implausible" in caplog.text and "2.05" in caplog.text
+        d = json.loads(get(f"{base}/api/display", {**hdr, "Battery-Voltage": "3.9"})[2])
+        assert d["sleep_mode"] == "deep" and devices.get(MAC).voltage == 3.9
+    finally:
+        srv.shutdown()
+
+
+def test_display_pins_the_served_frame(env):
+    """Cílový snímek z odpovědi je připnutý hned, ne až po dalším dotazu zařízení."""
+    fid = env["frames"].put(WHITE)
+    d = display(env)
+    assert d["action"] == "full" and d["frame_id"] == fid
+    st = env["devices"].get(MAC)
+    assert st.target_frame_id == fid and st.frame_id is None
+    assert env["devices"].frame_ids(now=env["clock"]["now"].timestamp()) == {fid}
+
+
+def test_implausible_voltage_without_history_means_battery(env):
+    d = display(env, voltage="2.05")
+    assert d["sleep_mode"] == "deep"
