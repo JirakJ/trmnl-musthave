@@ -92,7 +92,8 @@ run fails loudly above 4.5 kB.
 TRMNL re-renders a private plugin at most every 15 minutes unless you pay for TRMNL+. To update the screen every
 5 minutes, run the built-in BYOS server instead and point the device at it. The server renders the same Liquid
 template locally (headless Chrome → 1-bit PNG; the TRMNL framework CSS/JS is cached in `state/cache/` and the Inter
-font ships in `musthave/assets/`, so a render never waits for the network) and serves the three endpoints the firmware expects
+font ships in `musthave/assets/`, so a render never waits for the network; `deploy/install.sh` seeds the cache from the
+local machine) and serves the three endpoints the firmware expects
 (`/api/setup`, `/api/display`, `/api/log`). If a fetch or render fails, the previous image stays and the device
 does not redraw (the `filename` does not change). The server still pushes data to the TRMNL cloud, so switching
 back is a soft reset away.
