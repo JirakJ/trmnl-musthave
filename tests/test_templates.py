@@ -26,6 +26,19 @@ def test_template_uses_only_payload_variables(layout):
     assert roots <= ALLOWED_ROOTS, roots - ALLOWED_ROOTS
 
 
+def test_shell_fallback_css_covers_every_structural_class_the_templates_use():
+    """Kdyby se framework CSS nenačetl (pomalá síť), sloupce/flex drží z FALLBACK_CSS v shellu."""
+    from musthave.screen import FALLBACK_CSS
+
+    used = set()
+    for layout in LAYOUTS:
+        used |= set(re.findall(r'class="([^"]*)"', (TEMPLATES / f"{layout}.liquid").read_text(encoding="utf-8")))
+    classes = {c for cls in used for c in cls.split() if c in ("layout", "layout--col", "columns", "column", "flex", "flex--col")}
+    for cls in classes:
+        assert re.search(rf"\.mh[ .]{'' if cls == 'layout' else ''}.*{re.escape(cls)}", FALLBACK_CSS), cls
+    assert re.search(r"\.mh \.columns \{[^}]*display: flex", FALLBACK_CSS) and re.search(r"\.mh \.column \{[^}]*flex: 1 1 0", FALLBACK_CSS)
+
+
 @pytest.mark.parametrize("layout", LAYOUTS)
 def test_template_has_no_emoji(layout):
     src = (TEMPLATES / f"{layout}.liquid").read_text(encoding="utf-8")

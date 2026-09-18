@@ -127,6 +127,42 @@ def test_run_prefers_webhook_uuid_when_both_configured(tmp_path):
     assert not [p for p in http.posts if "/data" in p[0]]
 
 
+class DownHttp(FakeHttp):
+    """Síť je pryč: každý požadavek selže."""
+
+    def get_json(self, url, headers=None):
+        raise OSError("network unreachable")
+
+    def post_json(self, url, body, headers=None):
+        raise OSError("network unreachable")
+
+
+def test_collect_falls_back_to_last_good_streams(tmp_path):
+    from musthave.config import load_settings
+
+    env = project(tmp_path)
+    settings = load_settings(tmp_path, env)
+    good = collect(FakeHttp(), settings, datetime(2026, 9, 18, 20, 0))
+    assert good.payload["kick"]["ok"] and good.payload["twitch"]["ok"] and not good.all_down
+    assert good.last_kick["data"]["ok"] and good.last_twitch["data"]["ok"]
+
+    down = collect(DownHttp(), settings, datetime(2026, 9, 18, 20, 10), good.last_weather, last_kick=good.last_kick, last_twitch=good.last_twitch)
+    assert down.payload["kick"]["stale"] is True and down.payload["kick"]["items"] == good.payload["kick"]["items"]
+    assert down.payload["twitch"]["stale"] is True and down.payload["weather"]["stale"] is True
+    assert down.all_down and down.last_kick == good.last_kick
+
+    old = collect(DownHttp(), settings, datetime(2026, 9, 18, 20, 41), good.last_weather, last_kick=good.last_kick, last_twitch=good.last_twitch)
+    assert old.payload["kick"] == {"ok": False, "items": [], "live": 0}  # 31 min → už „nedostupný“
+    assert old.payload["weather"]["stale"] is True                       # počasí drží 3 h
+
+
+def test_run_persists_last_good_streams(tmp_path):
+    env = project(tmp_path)
+    assert run(tmp_path, http=FakeHttp(), env=env, now=datetime(2026, 9, 18, 20, 0)) == 0
+    st = load_state(tmp_path / "state" / "last.json")
+    assert st.last_kick["data"]["ok"] and st.last_twitch["data"]["ok"]
+
+
 def test_collect_passes_countdowns_from_settings(tmp_path):
     from musthave.config import load_settings
 

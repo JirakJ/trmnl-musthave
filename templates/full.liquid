@@ -78,7 +78,7 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
     <div class="column">
       <div class="mh-col-head">
         <span class="title title--small">KICK</span>
-        <span class="label label--small">{{ kick.live }} live</span>
+        <span class="label label--small">{{ kick.live }} live{% if kick.stale %} · starší data{% endif %}</span>
       </div>
       {% if kick.ok %}
         {% for item in kick.items %}
@@ -99,7 +99,7 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
     <div class="column">
       <div class="mh-col-head">
         <span class="title title--small">TWITCH</span>
-        <span class="label label--small">{{ twitch.live }} live</span>
+        <span class="label label--small">{{ twitch.live }} live{% if twitch.stale %} · starší data{% endif %}</span>
       </div>
       {% if twitch.ok %}
         {% for item in twitch.items %}

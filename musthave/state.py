@@ -14,13 +14,15 @@ log = logging.getLogger(__name__)
 class State:
     last_sent_at: float | None = None
     last_payload: dict | None = None
-    last_weather: dict | None = None
+    last_weather: dict | None = None   # {"ts", "weather"} – poslední dobré počasí
+    last_kick: dict | None = None      # {"ts", "data"} – poslední dobrý stav Kick
+    last_twitch: dict | None = None    # {"ts", "data"} – poslední dobrý stav Twitch
 
 
 def load_state(path: Path) -> State:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload", "last_weather")})
+        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload", "last_weather", "last_kick", "last_twitch")})
     except FileNotFoundError:
         return State()
     except Exception as err:  # noqa: BLE001

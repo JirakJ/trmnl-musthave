@@ -6,7 +6,7 @@ from pathlib import Path
 
 from musthave.frames import FrameStore, png_to_bitmap
 from musthave.serve import tick
-from musthave.state import State
+from musthave.state import State, load_state
 
 FIX = Path(__file__).parent / "fixtures"
 OPENMETEO = json.loads((FIX / "openmeteo.json").read_text(encoding="utf-8"))
@@ -72,6 +72,51 @@ def test_tick_renders_and_stores_frame(tmp_path):
     assert ok is True
     assert calls[0]["kick"]["items"][0]["n"] == "Astatoro"
     assert frames.latest() is not None and frames.get(frames.latest()) == png_to_bitmap(png(1))
+
+
+class DownHttp(FakeHttp):
+    def get_json(self, url, headers=None):
+        raise OSError("network unreachable")
+
+    def post_json(self, url, body, headers=None):
+        raise OSError("network unreachable")
+
+
+def test_tick_keeps_frame_and_last_good_data_during_a_network_outage(tmp_path):
+    """Wi-Fi vypadne: žádný render „nedostupné“, zařízení drží poslední dobrý snímek; po návratu sítě jede dál."""
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames")
+    renders = []
+
+    def renderer(payload):
+        renders.append(payload)
+        return png(1)
+
+    assert tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 18, 20, 0), renderer=renderer, push=False)
+    good = frames.latest()
+    assert tick(tmp_path, frames, http=DownHttp(), env={}, now=datetime(2026, 9, 18, 20, 5), renderer=renderer, push=False) is False
+    assert frames.latest() == good and len(renders) == 1          # nic se nepřekreslilo
+    st = load_state(tmp_path / "state" / "last.json")
+    assert st.last_kick["data"]["ok"] and st.last_twitch["data"]["ok"]  # poslední dobrá data zůstala
+    assert tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 18, 20, 10), renderer=renderer, push=False)
+    assert len(renders) == 1 and renders[0]["kick"]["ok"]        # stejná data → stejný snímek, bez renderu
+
+
+def test_tick_renders_stale_streams_when_only_one_source_is_down(tmp_path):
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames")
+    seen = []
+
+    class KickDown(FakeHttp):
+        def get_json(self, url, headers=None):
+            if "kick.com" in url:
+                raise OSError("reset by peer")
+            return super().get_json(url, headers)
+
+    tick(tmp_path, frames, http=FakeHttp(), env={}, now=datetime(2026, 9, 18, 20, 0), renderer=lambda p: seen.append(p) or png(1), push=False)
+    tick(tmp_path, frames, http=KickDown(), env={}, now=datetime(2026, 9, 18, 20, 5), renderer=lambda p: seen.append(p) or png(0), push=False)
+    assert seen[-1]["kick"]["stale"] is True and seen[-1]["kick"]["items"] == seen[0]["kick"]["items"]
+    assert "stale" not in seen[-1]["twitch"]
 
 
 def test_tick_keeps_last_frame_when_render_fails(tmp_path):

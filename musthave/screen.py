@@ -16,21 +16,43 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
+from .framework import Framework, FrameworkCache
+
 ROOT = Path(__file__).resolve().parent.parent
 WIDTH, HEIGHT = 800, 480
-FRAMEWORK_CSS = "https://trmnl.com/css/latest/plugins.css"
-FRAMEWORK_JS = "https://trmnl.com/js/latest/plugins.js"
+ASSETS_DIR = ROOT / "musthave" / "assets"
+FRAMEWORK_CACHE_DIR = ROOT / "state" / "cache"
+FRAMEWORK = FrameworkCache(FRAMEWORK_CACHE_DIR)  # testy nahrazují monkeypatchem
+GOOGLE_FONTS_INTER = "https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap"
+
+# Struktura layoutu (flex sloupce) nezávislá na frameworku TRMNL: kdyby se plugins.css nenačetl, layout se
+# nesmí rozpadnout pod sebe. Jen pro naše šablony (.mh), framework má přednost tam, kde se načte.
+FALLBACK_CSS = """    .mh.layout { display: flex; flex-direction: column; width: 100%; height: var(--screen-h, 480px); box-sizing: border-box; }
+    .mh.layout:not(.layout--col) { flex-direction: row; align-items: center; }
+    .mh .flex { display: flex; }
+    .mh .flex--col { flex-direction: column; }
+    .mh .columns { display: flex; flex-direction: row; width: 100%; align-items: flex-start; }
+    .mh .column { flex: 1 1 0; width: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }"""
+
+# Inter (variabilní 300–700) přibalený v repu: render nesmí záviset na fonts.googleapis.com.
+INTER_FACES = (
+    ("inter-latin-ext.woff2", "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, "
+                              "U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"),
+    ("inter-latin.woff2", "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, "
+                          "U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"),
+)
 
 # Shell napodobuje TRMNL OG (třídy + CSS proměnné z GET /api/models, model og_png).
 SHELL = """<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
+  <style>
+{fallback}
+  </style>
   <link rel="stylesheet" href="{css}">
   <script src="{js}"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;350;375;400;450;600;700&display=swap" rel="stylesheet">
+{font}
   <style>body {{ margin: 0; background: #fff; }} .screen {{ margin: 0; }}</style>
 </head>
 <body class="environment trmnl">
@@ -74,8 +96,25 @@ CHROME_CANDIDATES = [
 ]
 
 
-def build_html(markup: str, layout: str = "full") -> str:
-    return SHELL.format(css=FRAMEWORK_CSS, js=FRAMEWORK_JS, layout=layout, body=markup)
+def font_css(assets_dir: Path = ASSETS_DIR) -> str:
+    """@font-face pro přibalený Inter (file://); když soubory chybí, <link> na Google Fonts jako dřív."""
+    faces = []
+    for name, ranges in INTER_FACES:
+        path = Path(assets_dir) / name
+        if not path.exists():
+            return f'  <link href="{GOOGLE_FONTS_INTER}" rel="stylesheet">'
+        faces.append("    @font-face { font-family: 'Inter'; font-style: normal; font-weight: 300 700; font-display: block; "
+                     f"src: url({path.resolve().as_uri()}) format('woff2'); unicode-range: {ranges}; }}")
+    return "  <style>\n" + "\n".join(faces) + "\n  </style>"
+
+
+_FONT_CSS = font_css()  # cesty se za běhu nemění
+
+
+def build_html(markup: str, layout: str = "full", framework: Framework | None = None) -> str:
+    """HTML pro Chromium. Bez `framework` se použije lokální cache (state/cache, bez sítě), viz framework.py."""
+    fw = framework or FRAMEWORK.resolve()
+    return SHELL.format(css=fw.css, js=fw.js, font=_FONT_CSS, fallback=FALLBACK_CSS, layout=layout, body=markup)
 
 
 def render_markup(payload: dict, layout: str = "full") -> str:

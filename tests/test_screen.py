@@ -32,8 +32,34 @@ def test_to_device_image_resizes_wrong_size():
     assert Image.open(io.BytesIO(out)).size == (800, 480)
 
 
-def test_build_html_wraps_markup_in_og_shell():
+def test_build_html_embeds_vendored_inter_local_framework_and_fallback_css(tmp_path, monkeypatch):
+    from musthave import screen
+    from musthave.framework import FrameworkCache
+
+    (tmp_path / "plugins.css").write_bytes(b".trmnl .columns{display:flex}")
+    (tmp_path / "plugins.js").write_bytes(b"function x(){}")
+    monkeypatch.setattr(screen, "FRAMEWORK", FrameworkCache(tmp_path, fetch_fn=lambda *a, **k: (_ for _ in ()).throw(AssertionError("no network in render"))))
     html = build_html("<b>hello</b>", layout="full")
+    assert f'href="{(tmp_path / "plugins.css").resolve().as_uri()}"' in html
+    assert "fonts.googleapis.com" not in html and "@font-face" in html
+    assert "inter-latin-ext.woff2" in html and "font-weight: 300 700" in html
+    assert "https://" not in html.split("<body")[0]                       # hlavička bez síťových závislostí
+    assert ".mh .columns { display: flex" in html and html.index(".mh .columns") < html.index("plugins.css")  # fallback před frameworkem
+
+
+def test_build_html_explicit_framework_and_missing_font_fall_back(tmp_path):
+    from musthave import screen
+    from musthave.framework import Framework
+
+    html = build_html("<b>x</b>", framework=Framework("file:///tmp/a.css", "file:///tmp/a.js", "cache"))
+    assert 'href="file:///tmp/a.css"' in html
+    assert "fonts.googleapis.com" in screen.font_css(tmp_path)  # bez přibalených fontů → Google Fonts
+
+
+def test_build_html_wraps_markup_in_og_shell():
+    from musthave.framework import Framework
+
+    html = build_html("<b>hello</b>", layout="full", framework=Framework("plugins.css", "plugins.js", "cache"))
     assert "screen--og_png" in html and 'view--full' in html and "<b>hello</b>" in html
     assert "plugins.css" in html
 

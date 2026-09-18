@@ -69,8 +69,9 @@ def _section(source: dict, game_max: int) -> dict:
         if "g" in i:
             i["g"] = _truncate(i["g"], game_max)
     out = {"ok": bool(source.get("ok")), "items": items, "live": sum(1 for i in items if i.get("live"))}
-    if source.get("fallback"):
-        out["fallback"] = True
+    for flag in ("fallback", "stale"):  # fallback = decapi místo GQL; stale = poslední dobrá data po výpadku
+        if source.get(flag):
+            out[flag] = True
     return out
 
 
