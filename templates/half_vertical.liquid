@@ -1,7 +1,9 @@
 {% comment %} TRMNL Must-have – half vertical (400x480): počasí nahoře, streamy pod sebou {% endcomment %}
 <style>
   .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
-  .mh.layout { align-items: stretch; justify-content: flex-start; overflow: hidden; }
+  .mh.layout { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; align-items: stretch; justify-content: flex-start; overflow: hidden; }
+  .mh .flex { display: flex; }
+  .mh .flex--col { flex-direction: column; }
   .mh.layout > * { flex-shrink: 0; }
   .mh-weather-main, .mh-forecast, .mh-col-head, .mh-row, .mh-offline { width: 100%; }
   .mh-forecast { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 0 4px; }

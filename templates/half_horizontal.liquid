@@ -1,6 +1,9 @@
 {% comment %} TRMNL Must-have – half horizontal (800x240): počasí vlevo, live streamy vpravo {% endcomment %}
 <style>
   .mh, .mh * { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+  .mh.layout { display: flex; width: 100%; box-sizing: border-box; }
+  .mh .flex { display: flex; }
+  .mh .flex--col { flex-direction: column; }
   .mh-wrap { display: flex; align-items: center; gap: 16px; width: 100%; min-width: 0; }
   .mh-weather-main { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; }
   .mh-days { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, auto); gap: 8px; }

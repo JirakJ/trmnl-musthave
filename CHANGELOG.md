@@ -4,6 +4,9 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+### Fixed
+- Rendering no longer depends on the network: the TRMNL framework CSS/JS is cached in `state/cache/` (downloaded outside the render with a long timeout, gzip, refreshed daily, old copy kept when the refresh fails) and Chromium loads it from disk; the Inter font is vendored in `musthave/assets/`; the templates carry their own flex rules for the columns. On a slow Wi-Fi the 8-second render budget used to expire before `plugins.css` arrived and the columns collapsed into a single stack of rows.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

@@ -16,10 +16,23 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
+from .framework import FRAMEWORK_CSS_URL, FRAMEWORK_JS_URL, FrameworkCache
+
 ROOT = Path(__file__).resolve().parent.parent
 WIDTH, HEIGHT = 800, 480
-FRAMEWORK_CSS = "https://trmnl.com/css/latest/plugins.css"
-FRAMEWORK_JS = "https://trmnl.com/js/latest/plugins.js"
+FRAMEWORK_CSS = FRAMEWORK_CSS_URL  # zpětná kompatibilita (build_html bez cache)
+FRAMEWORK_JS = FRAMEWORK_JS_URL
+ASSETS_DIR = ROOT / "musthave" / "assets"
+FRAMEWORK_CACHE_DIR = ROOT / "state" / "cache"
+GOOGLE_FONTS_INTER = "https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap"
+
+# Inter (variabilní 300–700) přibalený v repu: render nesmí záviset na fonts.googleapis.com.
+INTER_FACES = (
+    ("inter-latin-ext.woff2", "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, "
+                              "U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"),
+    ("inter-latin.woff2", "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, "
+                          "U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"),
+)
 
 # Shell napodobuje TRMNL OG (třídy + CSS proměnné z GET /api/models, model og_png).
 SHELL = """<!DOCTYPE html>
@@ -28,9 +41,7 @@ SHELL = """<!DOCTYPE html>
   <meta charset="utf-8">
   <link rel="stylesheet" href="{css}">
   <script src="{js}"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;350;375;400;450;600;700&display=swap" rel="stylesheet">
+{font}
   <style>body {{ margin: 0; background: #fff; }} .screen {{ margin: 0; }}</style>
 </head>
 <body class="environment trmnl">
@@ -74,8 +85,34 @@ CHROME_CANDIDATES = [
 ]
 
 
-def build_html(markup: str, layout: str = "full") -> str:
-    return SHELL.format(css=FRAMEWORK_CSS, js=FRAMEWORK_JS, layout=layout, body=markup)
+_framework_cache: FrameworkCache | None = None
+
+
+def framework_cache() -> FrameworkCache:
+    global _framework_cache
+    if _framework_cache is None or _framework_cache.dir != FRAMEWORK_CACHE_DIR:
+        _framework_cache = FrameworkCache(FRAMEWORK_CACHE_DIR)
+    return _framework_cache
+
+
+def font_css(assets_dir: Path = ASSETS_DIR) -> str:
+    """@font-face pro přibalený Inter (file://); když soubory chybí, <link> na Google Fonts jako dřív."""
+    faces = []
+    for name, ranges in INTER_FACES:
+        path = Path(assets_dir) / name
+        if not path.exists():
+            return f'  <link href="{GOOGLE_FONTS_INTER}" rel="stylesheet">'
+        faces.append("    @font-face { font-family: 'Inter'; font-style: normal; font-weight: 300 700; font-display: block; "
+                     f"src: url({path.resolve().as_uri()}) format('woff2'); unicode-range: {ranges}; }}")
+    return "  <style>\n" + "\n".join(faces) + "\n  </style>"
+
+
+def build_html(markup: str, layout: str = "full", css: str | None = None, js: str | None = None) -> str:
+    """HTML pro Chromium. Bez `css`/`js` se použije framework z lokální cache (state/cache), viz framework.py."""
+    if css is None or js is None:
+        fw = framework_cache().resolve()
+        css, js = css or fw.css, js or fw.js
+    return SHELL.format(css=css, js=js, font=font_css(), layout=layout, body=markup)
 
 
 def render_markup(payload: dict, layout: str = "full") -> str:

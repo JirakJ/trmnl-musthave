@@ -117,6 +117,8 @@ def serve(root: Path, port: int | None = None, push: bool = False, once: bool = 
     threading.Thread(target=srv.serve_forever, daemon=True, name="byos-http").start()
     interval = min(settings.policy.interval_usb, settings.policy.interval_battery)
     log.info("BYOS v1 server on port %d, render every %ds, push_to_trmnl=%s", srv.server_port, interval, push)
+    from .screen import framework_cache
+    log.info("framework assets: %s", framework_cache().resolve().source)  # stáhne/obnoví cache před prvním renderem
     try:
         while True:
             started = time.monotonic()

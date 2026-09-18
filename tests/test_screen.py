@@ -32,8 +32,31 @@ def test_to_device_image_resizes_wrong_size():
     assert Image.open(io.BytesIO(out)).size == (800, 480)
 
 
-def test_build_html_wraps_markup_in_og_shell():
+def test_build_html_embeds_vendored_inter_and_local_framework(tmp_path, monkeypatch):
+    from musthave import screen
+    from musthave.framework import ASSETS
+
+    (tmp_path / "plugins.css").write_bytes(b".trmnl .columns{display:flex}")
+    (tmp_path / "plugins.js").write_bytes(b"function x(){}")
+    monkeypatch.setattr(screen, "FRAMEWORK_CACHE_DIR", tmp_path)
+    monkeypatch.setattr(screen, "_framework_cache", None)
     html = build_html("<b>hello</b>", layout="full")
+    assert f'href="{(tmp_path / "plugins.css").resolve().as_uri()}"' in html
+    assert "fonts.googleapis.com" not in html and "@font-face" in html
+    assert "inter-latin-ext.woff2" in html and "font-weight: 300 700" in html
+    assert "https://" not in html.split("<body")[0].replace(ASSETS[0][1], "")  # hlavička bez síťových závislostí
+
+
+def test_build_html_explicit_css_and_missing_font_fall_back(tmp_path):
+    from musthave import screen
+
+    html = build_html("<b>x</b>", css="file:///tmp/a.css", js="file:///tmp/a.js")
+    assert 'href="file:///tmp/a.css"' in html
+    assert "fonts.googleapis.com" in screen.font_css(tmp_path)  # bez přibalených fontů → Google Fonts
+
+
+def test_build_html_wraps_markup_in_og_shell():
+    html = build_html("<b>hello</b>", layout="full", css="plugins.css", js="plugins.js")
     assert "screen--og_png" in html and 'view--full' in html and "<b>hello</b>" in html
     assert "plugins.css" in html
 
