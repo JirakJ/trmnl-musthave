@@ -26,7 +26,7 @@ ssh "$HOST" "chmod 600 '$REMOTE_DIR/.env'"
 echo "→ cache frameworku TRMNL (state/cache) – seed z tohoto stroje, aby první render na cíli nečekal na síť"
 if [[ -f "$ROOT/state/cache/plugins.css" && -f "$ROOT/state/cache/plugins.js" ]]; then
   ssh "$HOST" "mkdir -p '$REMOTE_DIR/state/cache'"
-  rsync -a "$ROOT/state/cache/plugins.css" "$ROOT/state/cache/plugins.js" "$HOST:$REMOTE_DIR/state/cache/"
+  rsync -ac "$ROOT/state/cache/plugins.css" "$ROOT/state/cache/plugins.js" "$HOST:$REMOTE_DIR/state/cache/"  # -c: přenést jen změněný obsah
 else
   echo "! lokální state/cache chybí (vznikne prvním lokálním renderem, např. preview/render.py) – cíl si framework stáhne sám" >&2
 fi

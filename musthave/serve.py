@@ -29,23 +29,29 @@ from .trmnl import send_data, send_webhook
 log = logging.getLogger("musthave.serve")
 
 
-def _push(settings, http, state: State, payload: dict, now: datetime, last_weather) -> State:
+def _remember(state: State, col, sent_at: float | None = None, payload: dict | None = None) -> State:
+    return State(sent_at if sent_at is not None else state.last_sent_at, payload if payload is not None else state.last_payload,
+                 col.last_weather, col.last_kick, col.last_twitch)
+
+
+def _push(settings, http, state: State, col, now: datetime) -> State:
+    payload = col.payload
     can_webhook = bool(settings.webhook_uuid)
     can_api = bool(settings.user_api_key and settings.plugin_setting_id)
     if not (can_webhook or can_api):
-        return State(state.last_sent_at, state.last_payload, last_weather)
+        return _remember(state, col)
     send, reason = should_send(state, payload, now.timestamp(), settings.min_interval_s, settings.heartbeat_s)
     if not send:
-        return State(state.last_sent_at, state.last_payload, last_weather)
+        return _remember(state, col)
     if can_webhook:
         status, text = send_webhook(http, settings.webhook_uuid, payload)
     else:
         status, text = send_data(http, settings.user_api_key, settings.plugin_setting_id, payload)
     if status >= 400:
         log.warning("trmnl push failed %s: %s", status, text[:120])
-        return State(state.last_sent_at, state.last_payload, last_weather)
+        return _remember(state, col)
     log.info("trmnl push (%s)", reason)
-    return State(now.timestamp(), payload, last_weather)
+    return _remember(state, col, now.timestamp(), payload)
 
 
 def tick(
@@ -68,13 +74,20 @@ def tick(
     seen = devices.latest_seen()
     fw = seen.fw_version if seen and seen.fw_version else ""
     try:
-        payload, last_weather = collect(http, settings, now, state.last_weather, fw=fw)
+        col = collect(http, settings, now, state.last_weather, fw=fw, last_kick=state.last_kick, last_twitch=state.last_twitch)
     except Exception as err:  # noqa: BLE001
         log.error("collect failed, keeping last frame: %s", err)
         return False
+    payload = col.payload
 
-    new_state = _push(settings, http, state, payload, now, last_weather) if push else State(state.last_sent_at, state.last_payload, last_weather)
+    new_state = _push(settings, http, state, col, now) if push else _remember(state, col)
     save_state(settings.state_path, new_state)
+
+    # Výpadek sítě (žádný zdroj nemá čerstvá data): obrazovku neměnit. Zařízení dál drží poslední dobrý
+    # snímek místo „nedostupné“ přes celý panel a zbytečného překreslení e-inku.
+    if col.all_down and frames.latest() is not None:
+        log.warning("all sources down, keeping frame %s", frames.latest())
+        return False
 
     # Stejná data → stejný snímek. Čas "aktualizováno" sám o sobě změnu nedělá, jinak by zařízení
     # překreslovalo každou minutu jen kvůli hodinám v hlavičce.
@@ -117,12 +130,14 @@ def serve(root: Path, port: int | None = None, push: bool = False, once: bool = 
     threading.Thread(target=srv.serve_forever, daemon=True, name="byos-http").start()
     interval = min(settings.policy.interval_usb, settings.policy.interval_battery)
     log.info("BYOS v1 server on port %d, render every %ds, push_to_trmnl=%s", srv.server_port, interval, push)
-    from .screen import framework_cache
-    log.info("framework assets: %s", framework_cache().resolve().source)  # stáhne/obnoví cache před prvním renderem
+    from .screen import FRAMEWORK
+    FRAMEWORK.refresh()  # první start bez cache: stáhnout před prvním renderem (potom už jen denní podmíněný GET v pozadí)
+    log.info("framework assets: %s", FRAMEWORK.resolve().source)
     try:
         while True:
             started = time.monotonic()
             try:
+                FRAMEWORK.refresh_in_background()  # nic nedělá, dokud není cache starší než den
                 tick(root, frames, push=push)
             except Exception as err:  # noqa: BLE001
                 log.exception("tick crashed: %s", err)

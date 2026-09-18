@@ -1,76 +1,88 @@
-"""Framework CSS/JS pro render: cache na disku, obnova mimo render, stará kopie při výpadku sítě."""
+"""Framework CSS/JS pro render: obnova mimo render (podmíněný GET), resolve() bez sítě, stará kopie při výpadku."""
 
-from musthave.framework import ASSETS, RETRY_AFTER_FAIL_S, FrameworkCache
+import json
 
+from musthave.framework import ASSETS, FrameworkCache, NotModified
+
+CSS_URL, JS_URL = ASSETS[0][2], ASSETS[1][2]
 CSS = b"body{} .trmnl .columns{display:flex}"
 JS = b"function x(){}"
 
 
-def fake_fetch(store):
-    def _fetch(url):
-        body = store.get(url)
+class FakeNet:
+    def __init__(self, store=None):
+        self.store = store or {CSS_URL: CSS, JS_URL: JS}
+        self.calls = []
+
+    def __call__(self, url, etag=None, last_modified=None):
+        self.calls.append((url, etag, last_modified))
+        body = self.store.get(url)
         if isinstance(body, Exception):
             raise body
-        return body
-    return _fetch
+        return body, {"etag": f'"{len(body)}"', "last_modified": "Fri, 18 Sep 2026 14:19:39 GMT"}
 
 
-def test_first_resolve_downloads_and_uses_file_uris(tmp_path):
-    store = {ASSETS[0][1]: CSS, ASSETS[1][1]: JS}
-    cache = FrameworkCache(tmp_path / "cache", fetch_fn=fake_fetch(store), now_fn=lambda: 1000.0)
+def test_refresh_downloads_and_resolve_uses_file_uris(tmp_path):
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: 1000.0)
+    cache.refresh()
     fw = cache.resolve()
     assert fw.source == "cache" and fw.css.startswith("file://") and fw.css.endswith("plugins.css") and fw.js.endswith("plugins.js")
     assert (tmp_path / "cache" / "plugins.css").read_bytes() == CSS
+    assert json.loads((tmp_path / "cache" / "plugins.css.meta.json").read_text())["etag"] == f'"{len(CSS)}"'
     assert not list((tmp_path / "cache").glob(".*.tmp"))
 
 
-def test_fresh_cache_is_not_refetched(tmp_path):
-    calls = []
-    store = {ASSETS[0][1]: CSS, ASSETS[1][1]: JS}
+def test_resolve_never_touches_the_network(tmp_path):
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: 1000.0)
+    fw = cache.resolve()
+    assert fw.source == "remote" and fw.css == CSS_URL and fw.js == JS_URL and net.calls == []
 
-    def fetch(url):
-        calls.append(url)
-        return store[url]
-    cache = FrameworkCache(tmp_path / "cache", fetch_fn=fetch, now_fn=lambda: 1000.0)
-    cache.resolve()
-    cache.resolve()
-    assert len(calls) == 2  # css + js jen jednou
+
+def test_refresh_within_the_interval_is_a_no_op(tmp_path):
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: 1000.0)
+    cache.refresh()
+    cache.refresh()
+    assert len(net.calls) == 2  # css + js jen jednou
+
+
+def test_daily_refresh_is_a_conditional_get_and_304_keeps_the_copy(tmp_path):
+    clock = {"now": 1000.0}
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: clock["now"], refresh_every_s=10)
+    cache.refresh()
+    clock["now"] += 11
+    net.store = {CSS_URL: NotModified(), JS_URL: NotModified()}
+    cache.refresh()
+    assert net.calls[-1] == (JS_URL, f'"{len(JS)}"', "Fri, 18 Sep 2026 14:19:39 GMT")  # validátory z minula
+    assert cache.resolve().source == "cache"                                     # 304 = zkontrolováno, čerstvé
+    assert (tmp_path / "cache" / "plugins.css").read_bytes() == CSS
 
 
 def test_stale_copy_is_used_when_refresh_fails(tmp_path):
     clock = {"now": 1000.0}
-    store = {ASSETS[0][1]: CSS, ASSETS[1][1]: JS}
-    cache = FrameworkCache(tmp_path / "cache", fetch_fn=fake_fetch(store), now_fn=lambda: clock["now"], max_age_s=10)
-    assert cache.resolve().source == "cache"
-    import os
-    for name in ("plugins.css", "plugins.js"):
-        os.utime(tmp_path / "cache" / name, (900.0, 900.0))
-    store[ASSETS[0][1]] = OSError("network down")
-    store[ASSETS[1][1]] = OSError("network down")
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: clock["now"], refresh_every_s=10)
+    cache.refresh()
+    clock["now"] += 11
+    net.store = {CSS_URL: OSError("network down"), JS_URL: OSError("network down")}
+    cache.refresh()
     fw = cache.resolve()
     assert fw.source == "stale-cache" and fw.css.startswith("file://")
     assert (tmp_path / "cache" / "plugins.css").read_bytes() == CSS   # stará kopie zůstala
 
 
-def test_remote_urls_when_nothing_cached_and_download_fails(tmp_path):
-    store = {ASSETS[0][1]: OSError("no network"), ASSETS[1][1]: OSError("no network")}
-    fw = FrameworkCache(tmp_path / "cache", fetch_fn=fake_fetch(store), now_fn=lambda: 1000.0).resolve()
-    assert fw.source == "remote" and fw.css == ASSETS[0][1] and fw.js == ASSETS[1][1]
+def test_garbage_download_is_rejected(tmp_path):
+    net = FakeNet({CSS_URL: b"<html>captive portal</html>", JS_URL: b"<html>captive portal</html>"})
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: 1000.0)
+    cache.refresh()
+    assert cache.resolve().source == "remote" and not (tmp_path / "cache" / "plugins.css").exists()
 
 
-def test_garbage_download_is_rejected_and_retry_is_throttled(tmp_path):
-    calls = []
-    clock = {"now": 1000.0}
-
-    def fetch(url):
-        calls.append(url)
-        return b"<html>captive portal</html>"
-    cache = FrameworkCache(tmp_path / "cache", fetch_fn=fetch, now_fn=lambda: clock["now"])
-    assert cache.resolve().source == "remote"
-    assert not (tmp_path / "cache" / "plugins.css").exists()
-    n = len(calls)
-    cache.resolve()                      # do RETRY_AFTER_FAIL_S se nezkouší znovu
-    assert len(calls) == n
-    clock["now"] += RETRY_AFTER_FAIL_S + 1
-    cache.resolve()
-    assert len(calls) == n + 2
+def test_background_refresh_thread_runs_to_completion(tmp_path):
+    net = FakeNet()
+    cache = FrameworkCache(tmp_path / "cache", fetch_fn=net, now_fn=lambda: 1000.0)
+    cache.refresh_in_background().join(timeout=5)
+    assert cache.resolve().source == "cache"

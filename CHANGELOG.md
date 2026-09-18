@@ -5,7 +5,8 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 ## [Unreleased]
 
 ### Fixed
-- Rendering no longer depends on the network: the TRMNL framework CSS/JS is cached in `state/cache/` (downloaded outside the render with a long timeout, gzip, refreshed daily, old copy kept when the refresh fails) and Chromium loads it from disk; the Inter font is vendored in `musthave/assets/`; the templates carry their own flex rules for the columns. On a slow Wi-Fi the 8-second render budget used to expire before `plugins.css` arrived and the columns collapsed into a single stack of rows.
+- Rendering no longer depends on the network: the TRMNL framework CSS/JS is cached in `state/cache/` (fetched outside the render: at server start and then a daily conditional GET with ETag/Last-Modified in a background thread; gzip, long timeout, old copy kept when the refresh fails) and Chromium loads it from disk; the Inter font is vendored in `musthave/assets/`; the render shell carries fallback flex rules for the columns. On a slow Wi-Fi the 8-second render budget used to expire before `plugins.css` arrived and the columns collapsed into a single stack of rows.
+- Kick and Twitch keep their last good state for 30 minutes when a fetch fails (shown as `starší data`, like the weather's 3-hour fallback) instead of `nedostupný` with an empty column. When every source is down (network outage) the screen is not re-rendered at all, so the device keeps the last good frame.
 
 ## [1.3.0] - 2026-09-17
 

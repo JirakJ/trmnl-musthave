@@ -118,3 +118,11 @@ def test_countdown_labels_use_czech_plurals_and_truncate_names():
     p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17), countdowns=events)
     n = p["countdowns"][0]["n"]
     assert len(n) == NAME_MAX and n.endswith("…")
+
+
+def test_section_keeps_stale_and_fallback_flags():
+    kick = {"ok": True, "items": [item("x", True, 5)], "stale": True}
+    twitch = {"ok": True, "items": [], "fallback": True}
+    p = build_payload(WEATHER, kick, twitch, datetime(2026, 9, 18))
+    assert p["kick"]["stale"] is True and "stale" not in p["twitch"]
+    assert p["twitch"]["fallback"] is True and "fallback" not in p["kick"]

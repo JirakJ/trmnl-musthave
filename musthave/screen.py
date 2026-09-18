@@ -16,15 +16,23 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-from .framework import FRAMEWORK_CSS_URL, FRAMEWORK_JS_URL, FrameworkCache
+from .framework import Framework, FrameworkCache
 
 ROOT = Path(__file__).resolve().parent.parent
 WIDTH, HEIGHT = 800, 480
-FRAMEWORK_CSS = FRAMEWORK_CSS_URL  # zpětná kompatibilita (build_html bez cache)
-FRAMEWORK_JS = FRAMEWORK_JS_URL
 ASSETS_DIR = ROOT / "musthave" / "assets"
 FRAMEWORK_CACHE_DIR = ROOT / "state" / "cache"
+FRAMEWORK = FrameworkCache(FRAMEWORK_CACHE_DIR)  # testy nahrazují monkeypatchem
 GOOGLE_FONTS_INTER = "https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap"
+
+# Struktura layoutu (flex sloupce) nezávislá na frameworku TRMNL: kdyby se plugins.css nenačetl, layout se
+# nesmí rozpadnout pod sebe. Jen pro naše šablony (.mh), framework má přednost tam, kde se načte.
+FALLBACK_CSS = """    .mh.layout { display: flex; flex-direction: column; width: 100%; height: var(--screen-h, 480px); box-sizing: border-box; }
+    .mh.layout:not(.layout--col) { flex-direction: row; align-items: center; }
+    .mh .flex { display: flex; }
+    .mh .flex--col { flex-direction: column; }
+    .mh .columns { display: flex; flex-direction: row; width: 100%; align-items: flex-start; }
+    .mh .column { flex: 1 1 0; width: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }"""
 
 # Inter (variabilní 300–700) přibalený v repu: render nesmí záviset na fonts.googleapis.com.
 INTER_FACES = (
@@ -39,6 +47,9 @@ SHELL = """<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
+  <style>
+{fallback}
+  </style>
   <link rel="stylesheet" href="{css}">
   <script src="{js}"></script>
 {font}
@@ -85,16 +96,6 @@ CHROME_CANDIDATES = [
 ]
 
 
-_framework_cache: FrameworkCache | None = None
-
-
-def framework_cache() -> FrameworkCache:
-    global _framework_cache
-    if _framework_cache is None or _framework_cache.dir != FRAMEWORK_CACHE_DIR:
-        _framework_cache = FrameworkCache(FRAMEWORK_CACHE_DIR)
-    return _framework_cache
-
-
 def font_css(assets_dir: Path = ASSETS_DIR) -> str:
     """@font-face pro přibalený Inter (file://); když soubory chybí, <link> na Google Fonts jako dřív."""
     faces = []
@@ -107,12 +108,13 @@ def font_css(assets_dir: Path = ASSETS_DIR) -> str:
     return "  <style>\n" + "\n".join(faces) + "\n  </style>"
 
 
-def build_html(markup: str, layout: str = "full", css: str | None = None, js: str | None = None) -> str:
-    """HTML pro Chromium. Bez `css`/`js` se použije framework z lokální cache (state/cache), viz framework.py."""
-    if css is None or js is None:
-        fw = framework_cache().resolve()
-        css, js = css or fw.css, js or fw.js
-    return SHELL.format(css=css, js=js, font=font_css(), layout=layout, body=markup)
+_FONT_CSS = font_css()  # cesty se za běhu nemění
+
+
+def build_html(markup: str, layout: str = "full", framework: Framework | None = None) -> str:
+    """HTML pro Chromium. Bez `framework` se použije lokální cache (state/cache, bez sítě), viz framework.py."""
+    fw = framework or FRAMEWORK.resolve()
+    return SHELL.format(css=fw.css, js=fw.js, font=_FONT_CSS, fallback=FALLBACK_CSS, layout=layout, body=markup)
 
 
 def render_markup(payload: dict, layout: str = "full") -> str:
