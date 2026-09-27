@@ -132,6 +132,15 @@ def test_countdowns_parsed_from_array_of_tables(tmp_path):
     assert s.countdowns == (Countdown("GTA VI", date(2026, 11, 19)), Countdown("WoW Forever", date(2026, 11, 4)))
 
 
+def test_countdown_yearly_flag(tmp_path):
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    write(tmp_path, CONFIG + '\n[[countdown]]\nname = "Vánoce"\ndate = 2026-12-24\nyearly = true\n')
+    assert load_settings(tmp_path, env={}).countdowns == (Countdown("Vánoce", date(2026, 12, 24), yearly=True),)
+
+
 def test_countdowns_default_empty(tmp_path):
     write(tmp_path, CONFIG)
     assert load_settings(tmp_path, env={}).countdowns == ()

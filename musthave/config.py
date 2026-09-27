@@ -23,10 +23,24 @@ class Countdown:
 
     name: str
     date: date
+    yearly: bool = False  # opakuje se každý rok (Vánoce, narozeniny) – po uplynutí se posune na další rok
+
+    def next_date(self, today: date) -> date:
+        """Nejbližší výskyt od `today` včetně; jednorázová událost vrací své datum (i minulé)."""
+        if not self.yearly or self.date >= today:
+            return self.date
+        for year in (today.year, today.year + 1):
+            try:
+                candidate = self.date.replace(year=year)
+            except ValueError:  # 29. 2. v nepřestupném roce
+                candidate = date(year, 2, 28)
+            if candidate >= today:
+                return candidate
+        raise AssertionError("unreachable")
 
 
 def parse_countdowns(raw: list) -> tuple[Countdown, ...]:
-    """[[countdown]] name + date; TOML datum přijde jako date/datetime, řetězec jako ISO 'YYYY-MM-DD'."""
+    """[[countdown]] name + date (+ volitelně yearly); TOML datum přijde jako date/datetime, řetězec jako ISO 'YYYY-MM-DD'."""
     out = []
     for entry in raw:
         value = entry["date"]
@@ -34,7 +48,7 @@ def parse_countdowns(raw: list) -> tuple[Countdown, ...]:
             value = value.date()
         elif not isinstance(value, date):
             value = date.fromisoformat(str(value))
-        out.append(Countdown(str(entry["name"]).strip(), value))
+        out.append(Countdown(str(entry["name"]).strip(), value, yearly=bool(entry.get("yearly", False))))
     return tuple(out)
 
 

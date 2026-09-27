@@ -102,6 +102,30 @@ def test_countdowns_skip_past_events_and_keep_release_day():
     assert p["countdowns"] == [{"n": "Today", "days": 0, "label": "DNES", "d": "17. 9."}]
 
 
+def test_yearly_countdown_rolls_over_to_next_year():
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    events = [Countdown("Vánoce", date(2026, 12, 24), yearly=True)]
+    before = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 12, 24), countdowns=events)
+    after = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 12, 25), countdowns=events)
+    later = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2028, 1, 1), countdowns=events)
+    assert before["countdowns"] == [{"n": "Vánoce", "days": 0, "label": "DNES", "d": "24. 12."}]
+    assert after["countdowns"] == [{"n": "Vánoce", "days": 364, "label": "364 dní", "d": "24. 12."}]
+    assert later["countdowns"][0]["days"] == 358  # 24. 12. 2028 (přestupný rok)
+
+
+def test_yearly_countdown_on_leap_day_falls_back_to_feb_28():
+    from datetime import date
+
+    from musthave.config import Countdown
+
+    events = [Countdown("Leap", date(2024, 2, 29), yearly=True)]
+    p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 2, 1), countdowns=events)
+    assert p["countdowns"] == [{"n": "Leap", "days": 27, "label": "27 dní", "d": "28. 2."}]
+
+
 def test_countdowns_default_empty():
     p = build_payload(WEATHER, {"ok": True, "items": []}, {"ok": True, "items": []}, datetime(2026, 9, 17))
     assert p["countdowns"] == []

@@ -24,13 +24,19 @@ pro stroj (`[server] port`, `label`, `headless`) patří do negitovaného `confi
 tabulky a `deploy/install.sh` ho nikdy nepřepíše.
 
 Volitelné `[[countdown]]` položky (`name` + `date`) vykreslí spodní lištu s odpočtem dnů (kalendářní dny v nastavené
-časové zóně, řazeno od nejbližší). V den vydání se ukáže `DNES`, minulé události zmizí samy; položky
+časové zóně, řazeno od nejbližší). V den vydání se ukáže `DNES`, minulé události zmizí samy – kromě položek
+s `yearly = true` (narozeniny, Vánoce), které se posunou na stejný den dalšího roku (29. 2. → 28. 2.); položky
 z `config.local.toml` se k základnímu seznamu přidávají:
 
 ```toml
 [[countdown]]
 name = "GTA VI"
 date = 2026-11-19
+
+[[countdown]]
+name = "Vánoce"
+date = 2026-12-24
+yearly = true
 ```
 
 Tajemství nejsou v repu. Sběrač je čte v tomto pořadí z prostředí, z negitovaného `.env` v kořenu projektu, nebo

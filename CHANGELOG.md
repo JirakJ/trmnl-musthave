@@ -4,6 +4,9 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+### Added
+- Recurring countdowns: `yearly = true` on a `[[countdown]]` entry rolls it over to the same day next year once it has passed (29 Feb falls back to 28 Feb in common years). Ships with a yearly Christmas countdown (24 Dec).
+
 ## [1.4.0] - 2026-09-18
 
 ### Fixed
