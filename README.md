@@ -40,7 +40,8 @@ date = 2026-11-19
 ```
 
 Each `[[countdown]]` entry becomes a "days to go" item (calendar days in the configured timezone, sorted by the
-nearest date). The release day shows `DNES`; past events disappear on their own. `[[countdown]]` entries in
+nearest date). The release day shows `DNES`; past events disappear on their own, unless the entry has
+`yearly = true` (birthdays, Christmas), which rolls it over to the same day next year (29 Feb → 28 Feb). `[[countdown]]` entries in
 `config.local.toml` are appended to the base list.
 
 Secrets never live in the repo. The collector reads them, in this order of precedence, from the environment,

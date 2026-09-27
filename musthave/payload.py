@@ -36,16 +36,18 @@ def days_label(days: int) -> str:
 
 
 def countdown_items(events: Iterable[Countdown], now: datetime) -> list[dict]:
-    """Dny do každé události (kalendářní, v časové zóně `now`), seřazené od nejbližší; minulé se vynechají.
+    """Dny do každé události (kalendářní, v časové zóně `now`), seřazené od nejbližší; minulé se vynechají,
+    opakované (yearly) se posunou na další rok.
 
     Položka: n (název, zkrácený), days, label (hotový český text), d (den. měsíc.)."""
     today = now.date()
     items = []
     for event in events:
-        days = (event.date - today).days
+        when = event.next_date(today)
+        days = (when - today).days
         if days >= 0:
             items.append({"n": _truncate(event.name, NAME_MAX), "days": days, "label": days_label(days),
-                          "d": f"{event.date.day}. {event.date.month}."})
+                          "d": f"{when.day}. {when.month}."})
     return sorted(items, key=lambda i: i["days"])
 
 
