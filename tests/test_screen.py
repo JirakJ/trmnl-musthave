@@ -64,6 +64,18 @@ def test_build_html_wraps_markup_in_og_shell():
     assert "plugins.css" in html
 
 
+@pytest.mark.parametrize("percent", [None, 1, 67, 100])
+def test_full_layout_renders_battery_percentage_and_matching_fill(percent):
+    from musthave.screen import render_markup
+
+    html = render_markup({"date": "Neděle 18. 10. 2026", "battery_percent": percent, "countdowns": []})
+    assert "Neděle 18. 10. 2026" in html
+    assert f'style="width: {percent or 0}%"' in html
+    assert (f"{percent} %" if percent is not None else "— %") in html
+    assert (f'aria-label="Baterie: {percent} procent"' if percent is not None
+            else 'aria-label="Baterie: stav není dostupný"') in html
+
+
 def test_broken_screenshot_is_rejected():
     """Chromium na RPi občas vrátí snímek s nedokresleným spodkem (šum/šedá) – takový render se zahodí."""
     from PIL import ImageDraw

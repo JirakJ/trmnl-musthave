@@ -187,6 +187,26 @@ def test_tick_puts_host_label_and_czech_date_into_payload(tmp_path):
     assert seen["host"] == "RPi" and seen["date"] == "Čtvrtek 17. 9. 2026"
 
 
+def test_battery_changes_rerender_but_identical_percentages_keep_the_frame(tmp_path):
+    from musthave.devices import DeviceRegistry
+    from musthave.policy import DeviceState
+
+    project(tmp_path)
+    frames = FrameStore(tmp_path / "state" / "frames")
+    reg = DeviceRegistry(tmp_path / "state" / "devices.json")
+    seen = []
+    now = datetime(2026, 10, 18, 10, 0)
+
+    def render(payload):
+        seen.append(payload["battery_percent"])
+        return png(1)
+
+    for voltage in (None, 3.8, 3.801, 3.6):
+        reg.save("AA:BB", DeviceState(last_seen_at=now.timestamp(), voltage=voltage))
+        assert tick(tmp_path, frames, http=FakeHttp(), env={}, now=now, renderer=render, push=False)
+    assert seen == [None, 67, 50]
+
+
 def test_tick_keeps_the_frames_a_device_shows_or_was_sent(tmp_path):
     """Server během výpadku renderuje dál; snímek na panelu (i ten právě poslaný) musí přežít limit úložiště,
     nepřipnuté starší snímky se vyřazují dál."""

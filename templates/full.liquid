@@ -1,6 +1,6 @@
 {% comment %}
 TRMNL Must-have – full layout (800x480, 1-bit)
-Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}]},
+Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}]},
           kick{ok,live,items[{n,live,v,g,s}]}, twitch{ok,live,items[...]}, countdowns[{n,days,label,d}]
 {% endcomment %}
 <style>
@@ -35,7 +35,11 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
   .mh-head { display: flex; justify-content: space-between; align-items: baseline; width: 100%; border-bottom: 2px solid #000; padding-bottom: 3px; }
   .mh-head-title { font-size: 13px; font-weight: 700; letter-spacing: .12em; }
   .mh-head-meta { font-size: 13px; font-weight: 500; }
-  .mh-head-date { font-size: 13px; font-weight: 600; }
+  .mh-head-date { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .mh-battery { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .mh-battery-icon { position: relative; display: inline-flex; width: 26px; height: 14px; padding: 2px; margin-right: 3px; box-sizing: border-box; border: 2px solid #000; border-radius: 3px; }
+  .mh-battery-icon::after { content: ""; position: absolute; right: -5px; top: 2px; width: 3px; height: 6px; background: #000; border-radius: 0 1px 1px 0; }
+  .mh-battery-fill { display: block; height: 100%; background: #000; border-radius: 1px; }
   .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
 </style>
 
@@ -43,7 +47,13 @@ Proměnné: updated, weather{ok,temp,feels,hum,wind,label,days[{d,hi,lo,p,label}
 
   <div class="mh-head">
     <span class="mh-head-title">MUST-HAVE{% if host %} · {{ host }}{% endif %}</span>
-    <span class="mh-head-date">{{ date }}</span>
+    <span class="mh-head-date">
+      <span>{{ date }}</span>
+      <span class="mh-battery" role="img" aria-label="Baterie: {% if battery_percent != nil %}{{ battery_percent }} procent{% else %}stav není dostupný{% endif %}" title="Poslední hlášený stav baterie (odhad z napětí)">
+        <span class="mh-battery-icon" aria-hidden="true"><span class="mh-battery-fill" style="width: {{ battery_percent | default: 0 }}%"></span></span>
+        <span aria-hidden="true">{% if battery_percent != nil %}{{ battery_percent }} %{% else %}— %{% endif %}</span>
+      </span>
+    </span>
     <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw %} · FW {{ fw }}{% endif %}</span>
   </div>
 

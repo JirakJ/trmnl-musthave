@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from .config import Countdown
+from .policy import plausible_voltage
 
 MAX_BYTES = 4500
 DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
@@ -24,6 +25,24 @@ class PayloadTooLarge(Exception):
 
 def czech_date(now: datetime) -> str:
     return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
+
+
+def battery_percent(voltage: float | None) -> int | None:
+    """Odhad pro TRMNL OG podle https://help.trmnl.com/en/articles/10556850-device-battery-faq.
+
+    Chybějící/neplatné měření není prázdná baterie. Horní pásma odpovídají odhadu v TRMNL účtu.
+    """
+    voltage = plausible_voltage(voltage)
+    if voltage is None:
+        return None
+    percent = round((voltage - 3.0) / 0.012, 2)
+    if percent >= 88:
+        return 100
+    if percent >= 85:
+        return 95
+    if percent >= 83:
+        return 90
+    return round(percent) if percent >= 10 else 1
 
 
 def days_label(days: int) -> str:
@@ -80,6 +99,7 @@ def _section(source: dict, game_max: int) -> dict:
 def build_payload(
     weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "",
     countdowns: Iterable[Countdown] = (),
+    battery_voltage: float | None = None,
 ) -> dict:
     for game_max in (GAME_MAX, GAME_MIN):
         payload = {
@@ -87,6 +107,7 @@ def build_payload(
             "date": czech_date(now),
             "host": host,
             "fw": fw,
+            "battery_percent": battery_percent(battery_voltage),
             "weather": copy.deepcopy(weather),
             "kick": _section(kick, game_max),
             "twitch": _section(twitch, game_max),

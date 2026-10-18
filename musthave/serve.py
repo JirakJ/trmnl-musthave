@@ -74,7 +74,8 @@ def tick(
     seen = devices.latest_seen()
     fw = seen.fw_version if seen and seen.fw_version else ""
     try:
-        col = collect(http, settings, now, state.last_weather, fw=fw, last_kick=state.last_kick, last_twitch=state.last_twitch)
+        col = collect(http, settings, now, state.last_weather, fw=fw, last_kick=state.last_kick,
+                      last_twitch=state.last_twitch, battery_voltage=seen.voltage if seen else None)
     except Exception as err:  # noqa: BLE001
         log.error("collect failed, keeping last frame: %s", err)
         return False

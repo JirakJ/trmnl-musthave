@@ -99,6 +99,11 @@ local machine) and serves the three endpoints the firmware expects
 does not redraw (the `filename` does not change). The server still pushes data to the TRMNL cloud, so switching
 back is a soft reset away.
 
+The full layout shows a battery icon with a proportional fill and charge percentage next to the date.
+The percentage is estimated from the device's last reported `Battery-Voltage` using the
+[TRMNL OG calculation](https://help.trmnl.com/en/articles/10556850-device-battery-faq) and updates on the next
+render. Without a valid reading, it shows `— %`.
+
 ```bash
 uv venv .venv && uv pip install -p .venv/bin/python -r requirements-server.txt   # python-liquid + Pillow
 .venv/bin/python -m musthave serve --once     # test render → state/screen/current.png
