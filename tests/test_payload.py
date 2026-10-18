@@ -79,6 +79,16 @@ def test_build_payload_adds_date_host_and_fw():
     assert q["host"] == "" and q["fw"] == "" and q["date"] == "Čtvrtek 17. 9. 2026"
 
 
+@pytest.mark.parametrize("voltage, expected", [
+    (None, None), (float("nan"), None), (float("inf"), None), (1.9, None), (5.6, None),
+    (3.0, 1), (3.1, 1), (3.12, 10), (3.6, 50), (3.8, 67),
+    (3.99, 82), (3.996, 90), (4.02, 95), (4.056, 100), (4.2, 100), (5.0, 100),
+])
+def test_payload_battery_estimate_matches_trmnl_og_and_rejects_bad_measurements(voltage, expected):
+    p = build_payload(WEATHER, {"ok": True}, {"ok": True}, datetime(2026, 10, 18), battery_voltage=voltage)
+    assert p["battery_percent"] == expected
+
+
 def test_countdowns_days_left_and_short_date():
     from datetime import date
 

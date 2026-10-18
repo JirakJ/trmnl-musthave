@@ -1,5 +1,9 @@
 {
  "updated": "17:41",
+ "date": "Středa 16. 9. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 67,
  "weather": {
   "ok": true,
   "temp": 22.6,

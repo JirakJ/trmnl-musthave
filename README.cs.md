@@ -90,6 +90,10 @@ endpointy, které firmware volá (`/api/setup`, `/api/display`, `/api/log`). Kdy
 zůstane poslední obrázek a zařízení nic nepřekreslí (`filename` se nezmění). Server dál posílá data i do TRMNL
 cloudu, takže návrat je jen soft reset zařízení.
 
+Vedle data je ikona baterie s výplní podle procent nabití. Procenta se odhadují z posledního hlášeného
+`Battery-Voltage` podle [výpočtu TRMNL OG](https://help.trmnl.com/en/articles/10556850-device-battery-faq)
+a aktualizují se při dalším renderu. Bez platného měření se ukáže `— %`.
+
 ```bash
 uv venv .venv && uv pip install -p .venv/bin/python -r requirements-server.txt   # python-liquid + Pillow
 .venv/bin/python -m musthave serve --once     # zkušební render → state/screen/current.png

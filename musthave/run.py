@@ -39,7 +39,8 @@ class Collected:
 
 
 def collect(http, settings: Settings, now: datetime, last_weather: dict | None = None, fw: str = "",
-            last_kick: dict | None = None, last_twitch: dict | None = None) -> Collected:
+            last_kick: dict | None = None, last_twitch: dict | None = None,
+            battery_voltage: float | None = None) -> Collected:
     """Paralelně stáhne všechny zdroje a poskládá payload.
 
     Twitch Client-ID se při 400 obnoví za běhu. Když zdroj selže, ukáže se jeho poslední dobrý stav označený
@@ -55,7 +56,8 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
     kick, rem_kick = with_last_good("kick", kick, last_kick, ts)
     twitch, rem_twitch = with_last_good("twitch", twitch, last_twitch, ts)
     host = settings.label or socket.gethostname().split(".")[0]
-    payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns)
+    payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,
+                            battery_voltage=battery_voltage)
     return Collected(payload, rem_weather, rem_kick, rem_twitch, all_down(weather, kick, twitch))
 
 
