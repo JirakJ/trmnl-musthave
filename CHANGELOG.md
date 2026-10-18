@@ -4,6 +4,12 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-18
+
+### Added
+
+- **dashboard**: show battery charge beside the date ([`7b3e37b`](https://github.com/JirakJ/trmnl-musthave/commit/7b3e37b05e0d48a9d6494ee396f11db8a677d7d1))
+
 ## [1.5.0] - 2026-09-27
 
 ### Added
@@ -54,3 +60,6 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 - BYOS protocol v1: `X-Frame-Id`, `action` none | partial | full, frame store (last 8 bitmaps), region diff (MHR1, up to 4 rectangles with old and new planes), policy-driven `sleep_mode`, `full_mode` and ghost-cleaning full refreshes, OTA serving from `deploy/firmware/`.
 - Legacy BYOS server (`/api/setup`, `/api/display`, `/api/log`, `/screens/<name>`) compatible with the stock TRMNL firmware.
 - Collector for weather (Open-Meteo), Kick and Twitch live status without developer applications; Liquid templates for the four TRMNL layouts; TRMNL cloud push (webhook or authenticated data endpoint).
+
+[Unreleased]: https://github.com/JirakJ/trmnl-musthave/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/JirakJ/trmnl-musthave/compare/v1.5.0...v1.6.0
