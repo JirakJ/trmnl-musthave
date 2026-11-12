@@ -128,6 +128,25 @@ full refresh against ghosting (`full_after_partials`, `full_every_minutes`, `nig
 `deploy/firmware/latest.bin` when `firmware_version.txt` differs from the device's version. Stock firmware keeps
 working against the same server (it always takes the `full` path). See `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Hourly forecast (next 6 hours)
+
+Under the current weather the full layout shows six hourly windows starting with the current hour: temperature,
+probability of precipitation (bar + %) and the expected amount, plus a short summary such as
+`Nejvyšší šance srážek 16–18 h (90 %) · 17,0 mm` or `Bez srážek do 15 h`. Data come from the same Open-Meteo
+request (`hourly=temperature_2m,precipitation_probability,precipitation`, `timeformat=unixtime`):
+
+- Open-Meteo reports precipitation for the *preceding* hour, so the window `h:00–h+1:00` takes its temperature
+  from `h:00` and its precipitation from `h+1:00`. The summary names whole-hour windows only (no minute precision).
+- Timestamps are unix time converted to the configured timezone, so windows cross midnight and DST correctly
+  (two `02h` in October, none in March).
+- Missing values are shown as `—`, never as zero, and the summary admits `část dat chybí`.
+- When the weather runs on its last good data (up to 3 h), windows that already ended are dropped and the screen
+  shows `data z HH:MM`.
+- The TRMNL cloud payload (5 kB limit) is fitted by `fit_for_cloud()`: hourly data are dropped before anything
+  essential when the payload would not fit; the local BYOS render has no such limit.
+
+Previews: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, rendered with `preview/shot.py`.
+
 ## Battery saving (night mode, low battery)
 
 Saving changes the `refresh_rate` the server sends to the device, so the device actually wakes up less often

@@ -1,0 +1,185 @@
+{
+ "updated": "22:40",
+ "date": "Středa 16. 9. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 67,
+ "weather": {
+  "ok": true,
+  "temp": 22.6,
+  "feels": 22.0,
+  "hum": 60,
+  "wind": 14,
+  "code": 3,
+  "label": "Zataženo",
+  "days": [
+   {
+    "d": "St",
+    "hi": 24,
+    "lo": 10,
+    "p": 100,
+    "code": 96,
+    "label": "Bouřka"
+   },
+   {
+    "d": "Čt",
+    "hi": 19,
+    "lo": 12,
+    "p": 100,
+    "code": 80,
+    "label": "Přeháňky"
+   },
+   {
+    "d": "Pá",
+    "hi": 20,
+    "lo": 8,
+    "p": 3,
+    "code": 3,
+    "label": "Zataženo"
+   }
+  ],
+  "hours": [
+   {
+    "ts": 1794517200,
+    "h": "22",
+    "t": 4,
+    "p": 20,
+    "mm": 0.2
+   },
+   {
+    "ts": 1794520800,
+    "h": "23",
+    "t": 3,
+    "p": 35,
+    "mm": 0.3
+   },
+   {
+    "ts": 1794524400,
+    "h": "00",
+    "t": 3,
+    "p": 40,
+    "mm": 0.6
+   },
+   {
+    "ts": 1794528000,
+    "h": "01",
+    "t": 2,
+    "p": 30,
+    "mm": 0.2
+   },
+   {
+    "ts": 1794531600,
+    "h": "02",
+    "t": -1,
+    "p": 10,
+    "mm": 0.0
+   },
+   {
+    "ts": 1794535200,
+    "h": "03",
+    "t": -2,
+    "p": 0,
+    "mm": 0.0
+   }
+  ],
+  "rain": "Nejvyšší šance srážek 23–2 h (40 %) · 1,3 mm"
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1387,
+    "g": "Valheim",
+    "s": "14:17"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 1340,
+    "g": "Valheim",
+    "s": "14:08"
+   },
+   {
+    "n": "CzechCloud",
+    "live": true,
+    "v": 1047,
+    "g": "Politics",
+    "s": "16:05"
+   },
+   {
+    "n": "FATTYPILLOW",
+    "live": false
+   },
+   {
+    "n": "CzechFather",
+    "live": false
+   }
+  ],
+  "live": 3
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 5171,
+    "g": "Diablo IV",
+    "s": "15:36"
+   },
+   {
+    "n": "Cruelladk",
+    "live": true,
+    "v": 759,
+    "g": "World of Warcraft",
+    "s": "14:57"
+   },
+   {
+    "n": "ArcadeBulls",
+    "live": true,
+    "v": 580,
+    "g": "Just Chatting",
+    "s": "16:01"
+   },
+   {
+    "n": "Conducteir77",
+    "live": true,
+    "v": 473,
+    "g": "WARDOGS",
+    "s": "00:15"
+   },
+   {
+    "n": "OliverovyKecy",
+    "live": true,
+    "v": 129,
+    "g": "Just Chatting",
+    "s": "14:59"
+   },
+   {
+    "n": "Agraelus",
+    "live": false
+   },
+   {
+    "n": "Artemis",
+    "live": false
+   }
+  ],
+  "live": 5
+ },
+ "countdowns": [
+  {
+   "n": "WoW Forever",
+   "days": 48,
+   "label": "48 dní",
+   "d": "4. 11."
+  },
+  {
+   "n": "GTA VI",
+   "days": 63,
+   "label": "63 dní",
+   "d": "19. 11."
+  }
+ ]
+}

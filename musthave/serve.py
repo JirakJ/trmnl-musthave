@@ -21,6 +21,7 @@ from .config import load_settings
 from .devices import LOCK as DEVICES_LOCK, DeviceRegistry
 from .frames import FrameStore, png_to_bitmap
 from .http import Http
+from .payload import PayloadTooLarge, fit_for_cloud
 from .run import collect
 from .screen import render_screen
 from .server import make_server
@@ -42,7 +43,11 @@ def _remember(state: State, col, sent_at: float | None = None, payload: dict | N
 
 
 def _push(settings, http, state: State, col, now: datetime) -> State:
-    payload = col.payload
+    try:
+        payload = fit_for_cloud(col.payload)  # cloud má limit 5 kB → menší reprezentace
+    except PayloadTooLarge as err:
+        log.warning("trmnl push skipped: %s", err)
+        return _remember(state, col)
     can_webhook = bool(settings.webhook_uuid)
     can_api = bool(settings.user_api_key and settings.plugin_setting_id)
     if not (can_webhook or can_api):
@@ -83,7 +88,7 @@ def tick(
     try:
         col = collect(http, settings, now, state.last_weather, fw=fw, last_kick=state.last_kick,
                       last_twitch=state.last_twitch, battery_voltage=seen.voltage if seen else None,
-                      saving=seen.saving if seen else None)
+                      saving=seen.saving if seen else None, max_bytes=None)  # lokální render: bez cloudového limitu
     except Exception as err:  # noqa: BLE001
         log.error("collect failed, keeping last frame: %s", err)
         return False

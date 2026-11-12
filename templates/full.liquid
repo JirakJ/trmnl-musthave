@@ -40,6 +40,17 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   .mh-battery-icon { position: relative; display: inline-flex; width: 26px; height: 14px; padding: 2px; margin-right: 3px; box-sizing: border-box; border: 2px solid #000; border-radius: 3px; }
   .mh-battery-icon::after { content: ""; position: absolute; right: -5px; top: 2px; width: 3px; height: 6px; background: #000; border-radius: 0 1px 1px 0; }
   .mh-battery-fill { display: block; height: 100%; background: #000; border-radius: 1px; }
+  .mh-hours { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; flex-shrink: 0; min-height: 22px; border-top: 1px solid #000; padding-top: 3px; }
+  .mh-rain { flex: 0 0 160px; font-size: 12px; font-weight: 600; line-height: 1.15; overflow: hidden; max-height: 28px; }
+  .mh-hours-grid { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .mh-hour { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+  .mh-hour-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.1; }
+  .mh-hour-l1 { font-size: 13px; }
+  .mh-hour-l1 b { font-weight: 700; }
+  .mh-hour-h { font-size: 11px; }
+  .mh-hour-l2 { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; }
+  .mh-hour-bar { position: relative; flex: 0 0 7px; width: 7px; height: 24px; border: 1px solid #000; box-sizing: border-box; }
+  .mh-hour-bar span { position: absolute; left: 0; right: 0; bottom: 0; background: #000; }
   .mh-saving { font-size: 11px; font-weight: 600; border: 1.5px solid #000; padding: 0 4px; margin-left: 2px; white-space: nowrap; }
   .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
 </style>
@@ -84,6 +95,23 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
       {% endfor %}
     </div>
   </div>
+
+  {% if weather.hours and weather.hours.size > 0 %}
+  <div class="mh-hours">
+    <span class="mh-rain">{{ weather.rain }}</span>
+    <div class="mh-hours-grid">
+      {% for hour in weather.hours %}
+      <div class="mh-hour">
+        <span class="mh-hour-bar" aria-hidden="true"><span style="height: {{ hour.p | default: 0 }}%"></span></span>
+        <span class="mh-hour-txt">
+          <span class="mh-hour-l1"><span class="mh-hour-h">{{ hour.h }}h</span> <b>{% if hour.t != nil %}{{ hour.t }}°{% else %}—{% endif %}</b></span>
+          <span class="mh-hour-l2">{% if hour.p != nil %}{{ hour.p }} %{% else %}— %{% endif %} · {% if hour.mm != nil %}{{ hour.mm | append: "" | replace: ".", "," }}{% else %}—{% endif %}</span>
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="columns gap--large">
     <div class="column">
