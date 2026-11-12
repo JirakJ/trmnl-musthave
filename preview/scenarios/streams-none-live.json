@@ -1,0 +1,85 @@
+{
+ "updated": "20:15",
+ "location": "Jihlava",
+ "date": "Čtvrtek 12. 11. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 64,
+ "saving": null,
+ "weather": {
+  "ok": true,
+  "temp": 22.6,
+  "feels": 22.0,
+  "hum": 60,
+  "wind": 14,
+  "code": 3,
+  "label": "Zataženo",
+  "days": [
+   {
+    "d": "St",
+    "hi": 24,
+    "lo": 10,
+    "p": 100,
+    "code": 96,
+    "label": "Bouřka"
+   },
+   {
+    "d": "Čt",
+    "hi": 19,
+    "lo": 12,
+    "p": 100,
+    "code": 80,
+    "label": "Přeháňky"
+   },
+   {
+    "d": "Pá",
+    "hi": 20,
+    "lo": 8,
+    "p": 3,
+    "code": 3,
+    "label": "Zataženo"
+   }
+  ]
+ },
+ "kick": {
+  "ok": true,
+  "items": [],
+  "live": 0,
+  "mode": "live_summary",
+  "offline": [
+   "Fattypillow",
+   "Czechfather",
+   "Astatoro",
+   "Miken",
+   "Czechcloud"
+  ]
+ },
+ "twitch": {
+  "ok": true,
+  "items": [],
+  "live": 0,
+  "mode": "live_summary",
+  "offline": [
+   "Arcadebulls",
+   "Agraelus",
+   "Artemis",
+   "Cruelladk",
+   "Conducteir77",
+   "Oliverovykecy",
+   "Rob2628"
+  ]
+ },
+ "countdowns": [],
+ "panels": [
+  {
+   "key": "kick",
+   "title": "KICK",
+   "na": "Kick nedostupný"
+  },
+  {
+   "key": "twitch",
+   "title": "TWITCH",
+   "na": "Twitch nedostupný"
+  }
+ ]
+}

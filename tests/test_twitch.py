@@ -49,13 +49,13 @@ def test_gql_parses_live_and_offline_in_input_order():
     arcade = out["items"][0]
     assert arcade["live"] is True and arcade["g"] == "Just Chatting" and isinstance(arcade["v"], int)
     assert len(arcade["s"]) == 5 and arcade["s"][2] == ":"
-    assert out["items"][1] == {"n": "Agraelus", "live": False}
+    assert out["items"][1] == {"id": "agraelus", "n": "Agraelus", "live": False}
 
 
 def test_unknown_login_is_offline_with_login_as_name():
     http = FakeHttp(post=[ok_gql()])
     out, _ = fetch_twitch(http, LOGINS, DEFAULT_CLIENT_ID)
-    assert out["items"][7] == {"n": "thislogindoesnotexist123", "live": False}
+    assert out["items"][7] == {"id": "thislogindoesnotexist123", "n": "thislogindoesnotexist123", "live": False}
 
 
 def test_gql_request_shape():
@@ -85,7 +85,7 @@ def test_gql_failure_falls_back_to_decapi():
     http = FakeHttp(post=[OSError("gql down")], decapi={"agraelus": "agraelus is offline", "rob2628": "4963"})
     out, cid = fetch_twitch(http, ["agraelus", "rob2628"], DEFAULT_CLIENT_ID)
     assert out["ok"] is True
-    assert out["items"] == [{"n": "agraelus", "live": False}, {"n": "rob2628", "live": True, "v": 4963}]
+    assert out["items"] == [{"id": "agraelus", "n": "agraelus", "live": False}, {"id": "rob2628", "n": "rob2628", "live": True, "v": 4963}]
     assert out["fallback"] is True
 
 

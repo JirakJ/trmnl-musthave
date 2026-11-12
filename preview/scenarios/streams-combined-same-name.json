@@ -1,0 +1,126 @@
+{
+ "updated": "20:15",
+ "location": "Jihlava",
+ "date": "Čtvrtek 12. 11. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 64,
+ "saving": null,
+ "weather": {
+  "ok": true,
+  "temp": 22.6,
+  "feels": 22.0,
+  "hum": 60,
+  "wind": 14,
+  "code": 3,
+  "label": "Zataženo",
+  "days": [
+   {
+    "d": "St",
+    "hi": 24,
+    "lo": 10,
+    "p": 100,
+    "code": 96,
+    "label": "Bouřka"
+   },
+   {
+    "d": "Čt",
+    "hi": 19,
+    "lo": 12,
+    "p": 100,
+    "code": 80,
+    "label": "Přeháňky"
+   },
+   {
+    "d": "Pá",
+    "hi": 20,
+    "lo": 8,
+    "p": 3,
+    "code": 3,
+    "label": "Zataženo"
+   }
+  ]
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 320,
+    "g": "Counter-Strike 2",
+    "s": "18:02"
+   },
+   {
+    "n": "miken",
+    "live": false
+   }
+  ],
+  "live": 1
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 320,
+    "g": "Warhammer 40,000: Spa…",
+    "s": "18:02",
+    "fav": true
+   },
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 5100,
+    "g": "Diablo IV",
+    "s": "18:02"
+   }
+  ],
+  "live": 2
+ },
+ "countdowns": [],
+ "panels": [
+  {
+   "key": "streams",
+   "title": "STREAMY",
+   "na": "Streamy nedostupné"
+  }
+ ],
+ "streams": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 320,
+    "g": "Warhammer 40,000: Spa…",
+    "s": "18:02",
+    "pf": "T",
+    "fav": true
+   },
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 5100,
+    "g": "Diablo IV",
+    "s": "18:02",
+    "pf": "T"
+   },
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 320,
+    "g": "Counter-Strike 2",
+    "s": "18:02",
+    "pf": "K"
+   },
+   {
+    "n": "miken",
+    "live": false,
+    "pf": "K"
+   }
+  ],
+  "live": 3
+ }
+}

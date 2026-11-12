@@ -147,6 +147,26 @@ request (`hourly=temperature_2m,precipitation_probability,precipitation`, `timef
 
 Previews: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, rendered with `preview/shot.py`.
 
+## Streams: favourites, LIVE-only, combined list
+
+```toml
+[streams]
+kick = ["fattypillow", "czechfather"]
+twitch = ["agraelus", "rob2628"]
+mode = "all"                 # all (default, as before) | live | live_summary (live + one line "offline: …")
+favorites = ["twitch:agraelus", "kick:fattypillow"]   # identity = platform:slug/login, never the display name
+max_items = 0                # per list, 0 = unlimited; hidden ones show as "+N dalších"
+combined = false             # one list across Kick and Twitch with a K/T badge
+```
+
+Stable order: live favourites (in `favorites` order) → other live channels by viewers, ties by platform and id →
+offline favourites → other offline channels in configuration order. The limit is applied after sorting, so live
+channels win. `live` shows `Nikdo nevysílá` when nobody is live; a source outage still shows `Kick nedostupný`
+(never "nobody is live"). When one channel's request fails, its last known state (≤ 30 min since it was actually
+fetched) is kept and marked instead of flipping it offline; without history it shows `name ?`. The combined list keeps
+category, viewers and start time and names a platform that has no data (`bez Kick`).
+Previews: `preview/scenarios/streams-*.json`.
+
 ## ČHMÚ weather warnings
 
 An optional strip under the header shows the most severe valid or upcoming ČHMÚ warning for the configured area:

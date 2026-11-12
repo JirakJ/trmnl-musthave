@@ -43,12 +43,12 @@ def local_hhmm(iso_utc: str) -> str:
 
 def parse_user(login: str, user: dict | None) -> dict:
     if not user:
-        return {"n": login, "live": False}
+        return {"id": login, "n": login, "live": False}
     name = user.get("displayName") or login
     stream = user.get("stream")
     if not stream:
-        return {"n": name, "live": False}
-    item = {"n": name, "live": True, "v": int(stream.get("viewersCount") or 0)}
+        return {"id": login, "n": name, "live": False}
+    item = {"id": login, "n": name, "live": True, "v": int(stream.get("viewersCount") or 0)}
     game = (stream.get("game") or {}).get("displayName")
     if game:
         item["g"] = game
@@ -76,12 +76,12 @@ def _decapi(http, logins: list[str]) -> list[dict]:
         except Exception as err:  # noqa: BLE001
             log.warning("decapi %s failed: %s", login, err)
             failures += 1
-            items.append({"n": login, "live": False, "err": True})
+            items.append({"id": login, "n": login, "live": False, "err": True})
             continue
         if text.endswith("is offline") or not text.replace(",", "").isdigit():
-            items.append({"n": login, "live": False})
+            items.append({"id": login, "n": login, "live": False})
         else:
-            items.append({"n": login, "live": True, "v": int(text.replace(",", ""))})
+            items.append({"id": login, "n": login, "live": True, "v": int(text.replace(",", ""))})
     if failures == len(logins):
         raise RuntimeError("decapi unavailable")
     return items

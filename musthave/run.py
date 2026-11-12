@@ -17,7 +17,8 @@ from .config import Settings, load_settings
 from .http import Http
 from .kick import fetch_kick
 from .payload import MAX_BYTES, PayloadTooLarge, build_payload, encode
-from .sources import all_down, with_last_good
+from .sources import STALE_MAX_S, all_down, with_last_good
+from .streams import fill_item_errors
 from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
@@ -63,6 +64,9 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         if alerts_f is not None:
             alerts_state, last_sources["alerts"] = alerts_f.result()
     weather, rem_weather = with_fallback(weather, last_weather, ts)
+    # chyba jednoho kanálu ≠ přechod do offline: převezme poslední známý stav (stale) z cache zdroje
+    kick = fill_item_errors(kick, last_kick, ts, STALE_MAX_S["kick"])
+    twitch = fill_item_errors(twitch, last_twitch, ts, STALE_MAX_S["twitch"])
     kick, rem_kick = with_last_good("kick", kick, last_kick, ts)
     twitch, rem_twitch = with_last_good("twitch", twitch, last_twitch, ts)
     host = settings.label or socket.gethostname().split(".")[0]
@@ -71,7 +75,7 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         extras["alert"] = alert_strip(alerts_state, now, settings.alerts)
     payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,
                             battery_voltage=battery_voltage, saving=saving, max_bytes=max_bytes,
-                            location=settings.location_name, extras=extras)
+                            location=settings.location_name, extras=extras, streams_cfg=settings.streams)
     return Collected(payload, rem_weather, rem_kick, rem_twitch, all_down(weather, kick, twitch),
                      last_sources or None)
 

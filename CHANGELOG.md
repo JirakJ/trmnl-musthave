@@ -10,6 +10,7 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 - **hourly forecast** (#9): six hourly windows (temperature, precipitation probability and amount) with a rain summary under the current weather; Open-Meteo `timeformat=unixtime` so midnight and DST are correct; missing data shown as `—`; past windows dropped from stale data; the cloud payload drops hourly data first via `fit_for_cloud()` (the local render has no 5 kB limit).
 - **ČHMÚ warnings** (#12): `[alerts]` strip with the most severe valid/upcoming SIVS warning for configured ORP codes (CISORP, Jihlava 6105) from the public CAP feed: newest file by listing time verified by `<sent>`, cancellations/expiry respected, level readable in 1-bit, `+N další`, source, issue time and data age; "no warning" vs "source unavailable" distinguished; size-limited parser rejecting DTD/ENTITY; cache up to `max_age_hours`.
 - The header shows `[location] name` instead of a hard-coded city.
+- **streams** (#15): `[streams] mode = all | live | live_summary`, `favorites` (`platform:id`), `max_items` (`+N dalších`), `combined` list with K/T badges; stable ordering (favourites, viewers, platform/id tie-break); per-channel fetch errors keep the last known state instead of a fake offline transition; stream items carry the platform id. The full layout renders stream columns from a `panels` list.
 
 ## [1.6.0] - 2026-10-18
 
