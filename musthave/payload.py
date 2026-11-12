@@ -9,6 +9,7 @@ from datetime import datetime
 
 from .config import Countdown
 from .policy import battery_percent  # noqa: F401 – re-export (šablony, status)
+from .layout import View, resolve_panels
 from .streams import StreamsConfig, build_section
 
 MAX_BYTES = 4500
@@ -108,14 +109,6 @@ def _section(sources: list[tuple[str, dict]], game_max: int, now: datetime | Non
     return out
 
 
-def stream_panels(cfg: StreamsConfig) -> list[dict]:
-    """Výchozí sloupce streamů: dva (Kick, Twitch) nebo jeden společný seznam."""
-    if cfg.combined:
-        return [{"key": "streams", "title": "STREAMY", "na": "Streamy nedostupné"}]
-    return [{"key": "kick", "title": "KICK", "na": "Kick nedostupný"},
-            {"key": "twitch", "title": "TWITCH", "na": "Twitch nedostupný"}]
-
-
 def build_payload(
     weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "",
     countdowns: Iterable[Countdown] = (),
@@ -125,9 +118,14 @@ def build_payload(
     location: str = "",
     extras: dict | None = None,
     streams_cfg: StreamsConfig | None = None,
+    view: View | None = None,
+    profile: str | None = None,
 ) -> dict:
     """Payload pro šablony. `max_bytes` = limit TRMNL cloudu (zkrátí/odebere volitelná data, viz fit_for_cloud);
-    None = lokální BYOS render bez limitu. `extras` = volitelné panely (alert, agenda, …), None hodnoty se vynechají."""
+    None = lokální BYOS render bez limitu. `extras` = volitelné panely (alert, agenda, …), None hodnoty se vynechají.
+    `view` = rozložení (panely, varianta počasí, odpočet), výchozí podle [streams] combined."""
+    streams_cfg = streams_cfg or StreamsConfig()
+    view = view or View(panels=("streams",) if streams_cfg.combined else ("kick", "twitch"))
     payload = {
         "updated": now.strftime("%H:%M"),
         "location": location,
@@ -139,12 +137,13 @@ def build_payload(
         "weather": _weather(weather, now),
         "kick": _section([("kick", kick)], GAME_MAX, now, streams_cfg),
         "twitch": _section([("twitch", twitch)], GAME_MAX, now, streams_cfg),
-        "countdowns": countdown_items(countdowns, now),
-        "panels": stream_panels(streams_cfg or StreamsConfig()),
+        "countdowns": countdown_items(countdowns, now) if view.countdown else [],
+        "layout": {"weather": view.weather, **({"profile": profile} if profile else {})},
     }
-    if streams_cfg and streams_cfg.combined:
+    if "streams" in view.panels or streams_cfg.combined:
         payload["streams"] = _section([("kick", kick), ("twitch", twitch)], GAME_MAX, now, streams_cfg)
     payload.update({k: v for k, v in (extras or {}).items() if v is not None})
+    payload["panels"] = resolve_panels(view, payload)
     return payload if max_bytes is None else fit_for_cloud(payload, max_bytes)
 
 

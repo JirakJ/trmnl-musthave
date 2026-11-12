@@ -1,5 +1,5 @@
 {
- "updated": "20:15",
+ "updated": "14:05",
  "location": "Jihlava",
  "date": "Čtvrtek 12. 11. 2026",
  "host": "RPi",
@@ -8,49 +8,107 @@
  "saving": null,
  "weather": {
   "ok": true,
-  "temp": 22.6,
-  "feels": 22.0,
-  "hum": 60,
-  "wind": 14,
-  "code": 3,
-  "label": "Zataženo",
+  "temp": 8.4,
+  "feels": 5.9,
+  "hum": 81,
+  "wind": 17,
+  "code": 61,
+  "label": "Déšť",
   "days": [
    {
-    "d": "St",
-    "hi": 24,
-    "lo": 10,
-    "p": 100,
-    "code": 96,
-    "label": "Bouřka"
-   },
-   {
     "d": "Čt",
-    "hi": 19,
-    "lo": 12,
-    "p": 100,
-    "code": 80,
-    "label": "Přeháňky"
+    "hi": 9,
+    "lo": 3,
+    "p": 90,
+    "code": 61,
+    "label": "Déšť"
    },
    {
     "d": "Pá",
-    "hi": 20,
-    "lo": 8,
-    "p": 3,
+    "hi": 7,
+    "lo": 1,
+    "p": 20,
     "code": 3,
     "label": "Zataženo"
+   },
+   {
+    "d": "So",
+    "hi": 6,
+    "lo": -1,
+    "p": 5,
+    "code": 1,
+    "label": "Skoro jasno"
    }
-  ]
+  ],
+  "hours": [
+   {
+    "ts": 1794488400,
+    "h": "14",
+    "t": 8,
+    "p": 10,
+    "mm": 0.0
+   },
+   {
+    "ts": 1794492000,
+    "h": "15",
+    "t": 9,
+    "p": 60,
+    "mm": 1.2
+   },
+   {
+    "ts": 1794495600,
+    "h": "16",
+    "t": 9,
+    "p": 90,
+    "mm": 4.5
+   },
+   {
+    "ts": 1794499200,
+    "h": "17",
+    "t": 8,
+    "p": 85,
+    "mm": 2.1
+   },
+   {
+    "ts": 1794502800,
+    "h": "18",
+    "t": 7,
+    "p": 40,
+    "mm": 0.3
+   },
+   {
+    "ts": 1794506400,
+    "h": "19",
+    "t": 6,
+    "p": 10,
+    "mm": 0.0
+   }
+  ],
+  "rain": "Nejvyšší šance srážek 16⁠–⁠18 h (90 %) · 8,1 mm"
  },
  "kick": {
   "ok": true,
-  "items": [],
-  "live": 0,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1000,
+    "g": "Valheim",
+    "s": "12:02"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 900,
+    "g": "Valheim",
+    "s": "12:02"
+   }
+  ],
+  "live": 2,
   "mode": "live_summary",
   "offline": [
    "Fattypillow",
    "Czechfather",
-   "Astatoro",
-   "Miken",
    "Czechcloud"
   ]
  },
@@ -60,54 +118,72 @@
    {
     "n": "Arcadebulls",
     "live": true,
-    "v": 1000,
-    "g": "World of Warcraft: Th…",
-    "s": "18:02"
+    "v": 5000,
+    "g": "World of Warcraft",
+    "s": "12:02"
    },
    {
     "n": "Agraelus",
     "live": true,
-    "v": 910,
-    "g": "World of Warcraft: Th…",
-    "s": "18:02"
+    "v": 4300,
+    "g": "World of Warcraft",
+    "s": "12:02"
    },
    {
     "n": "Artemis",
     "live": true,
-    "v": 820,
-    "g": "World of Warcraft: Th…",
-    "s": "18:02"
+    "v": 3600,
+    "g": "World of Warcraft",
+    "s": "12:02"
    },
    {
     "n": "Cruelladk",
     "live": true,
-    "v": 730,
-    "g": "World of Warcraft: Th…",
-    "s": "18:02"
+    "v": 2900,
+    "g": "World of Warcraft",
+    "s": "12:02"
    },
    {
     "n": "Conducteir77",
     "live": true,
-    "v": 640,
-    "g": "World of Warcraft: Th…",
-    "s": "18:02"
+    "v": 2200,
+    "g": "World of Warcraft",
+    "s": "12:02"
    }
   ],
   "live": 7,
   "mode": "live_summary",
   "more": 2
  },
- "countdowns": [],
+ "countdowns": [
+  {
+   "n": "GTA VI",
+   "days": 7,
+   "label": "7 dní",
+   "d": "19. 11."
+  },
+  {
+   "n": "Vánoce",
+   "days": 42,
+   "label": "42 dní",
+   "d": "24. 12."
+  }
+ ],
+ "layout": {
+  "weather": "full"
+ },
  "panels": [
   {
    "key": "kick",
    "title": "KICK",
-   "na": "Kick nedostupný"
+   "na": "Kick nedostupný",
+   "w": 1
   },
   {
    "key": "twitch",
    "title": "TWITCH",
-   "na": "Twitch nedostupný"
+   "na": "Twitch nedostupný",
+   "w": 1
   }
  ]
 }

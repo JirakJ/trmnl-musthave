@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Callable, Mapping
 
 from .alerts import AlertsConfig
+from .layout import LayoutConfig, LayoutError, parse_layout
 from .policy import PolicyConfig
 from .streams import MODES, StreamsConfig, parse_favorite
 
@@ -79,6 +80,7 @@ class Settings:
     countdowns: tuple[Countdown, ...] = ()  # [[countdown]] – odpočty dnů do událostí
     alerts: AlertsConfig = AlertsConfig()   # [alerts] – výstrahy ČHMÚ (vypnuto, dokud není nastavena oblast)
     streams: StreamsConfig = StreamsConfig()  # [streams] mode / favorites / max_items / combined
+    layout: LayoutConfig = LayoutConfig()     # [layout] panely, varianty, profily
 
 
 class ConfigError(ValueError):
@@ -211,8 +213,16 @@ def load_settings(
         headless=str(server.get("headless", "auto")),
         countdowns=parse_countdowns(raw.get("countdown", [])),
         alerts=parse_alerts(raw.get("alerts", {})),
-        streams=parse_streams(streams),
+        streams=(streams_cfg := parse_streams(streams)),
+        layout=_parse_layout(raw.get("layout"), streams_cfg.combined),
     )
+
+
+def _parse_layout(raw, combined: bool) -> LayoutConfig:
+    try:
+        return parse_layout(raw, combined)
+    except LayoutError as err:
+        raise ConfigError(str(err)) from None
 
 
 def parse_streams(raw: dict) -> StreamsConfig:
