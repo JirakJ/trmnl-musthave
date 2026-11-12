@@ -147,6 +147,43 @@ request (`hourly=temperature_2m,precipitation_probability,precipitation`, `timef
 
 Previews: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, rendered with `preview/shot.py`.
 
+## Panels and profiles (full layout)
+
+Without a `[layout]` table the full layout stays as before (weather with the hourly strip, Kick and Twitch columns,
+countdown). With it you choose the panels, their order and width, and time-based profiles:
+
+```toml
+[layout]
+panels = ["kick", "twitch"]   # 1–3 columns: kick, twitch, streams (combined list), agenda, reminders
+widths = { twitch = 2 }       # flex weight 1–3 (default 1)
+weather = "full"              # full (with hourly forecast) | compact (no hourly, smaller) | off
+countdown = true
+hide_empty = ["kick"]         # hide when empty (nobody live / no items) – the space goes to the other panels
+shrink_empty = []             # or shrink to a narrow header-only column
+min_switch_minutes = 30       # a profile change is taken over at most this often (no carousel)
+
+[[layout.profile]]
+name = "pracovní den"
+days = ["po", "út", "st", "čt", "pá"]   # po út st čt pá so ne (or mon … sun)
+from = "07:00"
+to = "17:00"                            # may cross midnight; the day is the day the window starts
+panels = ["agenda", "reminders"]
+weather = "compact"
+```
+
+Rules: the first matching profile in file order wins (overlaps are allowed), otherwise the base `[layout]` applies.
+Times are local in `[location] timezone`. A window `22:00–02:00` with `days = ["pá"]` also covers Saturday 01:30.
+A profile switch is taken over no sooner than `min_switch_minutes` after the previous one, and because identical data
+produce an identical frame (`action: none`), the device redraws only when the content really changes. An unavailable
+source is never treated as "empty" and hidden; if every panel would be hidden, the first one stays. Unknown panels,
+duplicates, more than three columns, `streams` combined with `kick`/`twitch`, bad times or days fail with a clear
+configuration error (the server keeps the previous frame). Panels have fixed content limits: rows that do not fit
+completely are pushed into a hidden overflow column, so a cut-off row never appears on the e-ink.
+
+The half/quadrant templates keep their fixed content (weather + Kick/Twitch); `[layout]` applies to the full layout.
+Previews: `preview/make_scenarios.py` generates `preview/scenarios/*.json` (normal day, all streams offline, long
+texts, compact/shrink variants, …) and `preview/shot.py` renders them through the device pipeline.
+
 ## Streams: favourites, LIVE-only, combined list
 
 ```toml

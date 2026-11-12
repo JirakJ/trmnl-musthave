@@ -59,6 +59,14 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   .mh-alert-valid { flex: 0 0 auto; font-weight: 600; }
   .mh-alert-more { flex: 0 0 auto; font-size: 12px; border: 1.5px solid currentColor; padding: 0 4px; }
   .mh-alert-src { flex: 0 0 auto; margin-left: auto; font-size: 11px; }
+  .mh .columns { align-items: stretch; }
+  .mh .column { min-height: 0; }
+  /* Řádky, které se nevejdou celé, se zalomí do skrytého dalšího sloupce – žádný useknutý řádek na e-inku. */
+  .mh-list { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; overflow: hidden; }
+  .mh-list > * { width: 100%; flex-shrink: 0; box-sizing: border-box; }
+  .mh-col--compact { flex: 0 0 150px !important; width: 150px !important; }
+  .mh-weather--compact .mh-weather-main .mh-temp { font-size: 48px; }
+  .mh-weather--compact .mh-day .mh-temps { font-size: 16px; }
   .mh-pf { flex: 0 0 auto; width: 16px; height: 16px; line-height: 14px; text-align: center; font-size: 11px; font-weight: 800; border: 1.5px solid #000; box-sizing: border-box; }
   .mh-empty { font-size: 14px; font-weight: 600; padding: 6px 0; flex-shrink: 0; }
   .mh-more { font-size: 12px; font-weight: 600; padding: 2px 0; flex-shrink: 0; }
@@ -99,7 +107,8 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   </div>
   {% endif %}
 
-  <div class="mh-weather">
+  {% if layout.weather != "off" %}
+  <div class="mh-weather{% if layout.weather == "compact" %} mh-weather--compact{% endif %}">
     <div class="mh-weather-main">
       {% if weather.ok %}
       <span class="mh-temp">{{ weather.temp | round }}°</span>
@@ -125,8 +134,9 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
       {% endfor %}
     </div>
   </div>
+  {% endif %}
 
-  {% if weather.hours and weather.hours.size > 0 %}
+  {% if layout.weather == "full" and weather.hours and weather.hours.size > 0 %}
   <div class="mh-hours">
     <span class="mh-rain">{{ weather.rain }}</span>
     <div class="mh-hours-grid">
@@ -145,13 +155,17 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
 
   <div class="columns gap--large">
     {% for panel in panels %}
-    {% if panel.key == "kick" %}{% assign sec = kick %}{% elsif panel.key == "twitch" %}{% assign sec = twitch %}{% else %}{% assign sec = streams %}{% endif %}
-    <div class="column">
+    {% if panel.key == "kick" %}{% assign sec = kick %}{% elsif panel.key == "twitch" %}{% assign sec = twitch %}{% elsif panel.key == "streams" %}{% assign sec = streams %}{% endif %}
+    <div class="column{% if panel.compact %} mh-col--compact{% endif %}" style="flex-grow: {{ panel.w }}">
+      {% if panel.key == "kick" or panel.key == "twitch" or panel.key == "streams" %}
       <div class="mh-col-head">
         <span class="title title--small">{{ panel.title }}</span>
         <span class="label label--small">{{ sec.live }} live{% if sec.unavailable %} · bez {{ sec.unavailable | join: ", " }}{% endif %}{% if sec.stale %} · data z {{ sec.as_of | default: "dříve" }}{% endif %}</span>
       </div>
-      {% if sec.ok %}
+      {% if panel.compact %}
+        <div class="mh-empty">Nikdo nevysílá</div>
+      {% elsif sec.ok %}
+        <div class="mh-list">
         {% for item in sec.items %}
         <div class="mh-row {% unless item.live %}mh-off{% endunless %}">
           {% if item.pf %}<span class="mh-pf">{{ item.pf }}</span>{% endif %}
@@ -166,8 +180,10 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
         {% if sec.items.size == 0 %}<div class="mh-empty">Nikdo nevysílá</div>{% endif %}
         {% if sec.more %}<div class="mh-more">+{{ sec.more }} dalších</div>{% endif %}
         {% if sec.offline %}<div class="mh-offline">offline: {{ sec.offline | join: ", " }}</div>{% endif %}
+        </div>
       {% else %}
         <span class="description">{{ panel.na }}</span>
+      {% endif %}
       {% endif %}
     </div>
     {% endfor %}

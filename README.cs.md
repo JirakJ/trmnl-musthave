@@ -135,6 +135,43 @@ Pod aktuálním počasím full layout ukazuje šest hodinových oken od aktuáln
 
 Náhledy: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, render přes `preview/shot.py`.
 
+## Panely a profily (full layout)
+
+Bez tabulky `[layout]` zůstává full layout jako dřív (počasí s hodinovou předpovědí, sloupce Kick a Twitch, odpočet).
+S ní se volí panely, jejich pořadí a šířka a časové profily:
+
+```toml
+[layout]
+panels = ["kick", "twitch"]   # 1–3 sloupce: kick, twitch, streams (společný seznam), agenda, reminders
+widths = { twitch = 2 }       # váha šířky 1–3 (výchozí 1)
+weather = "full"              # full (s hodinovou předpovědí) | compact (bez ní, menší) | off
+countdown = true
+hide_empty = ["kick"]         # skrýt, když je prázdný (nikdo live / žádné položky) – místo dostanou ostatní
+shrink_empty = []             # nebo zmenšit na úzký sloupec jen s hlavičkou
+min_switch_minutes = 30       # změna profilu se převezme nejvýš takhle často (žádný carousel)
+
+[[layout.profile]]
+name = "pracovní den"
+days = ["po", "út", "st", "čt", "pá"]   # po út st čt pá so ne (nebo mon … sun)
+from = "07:00"
+to = "17:00"                            # může přes půlnoc; den = den, kdy okno začíná
+panels = ["agenda", "reminders"]
+weather = "compact"
+```
+
+Pravidla: vyhrává první vyhovující profil v pořadí souboru (překryvy jsou povolené), jinak platí základní `[layout]`.
+Časy jsou místní v `[location] timezone`. Okno `22:00–02:00` s `days = ["pá"]` platí i v sobotu v 01:30. Změna profilu
+se převezme nejdřív `min_switch_minutes` po předchozí a protože stejná data dávají stejný snímek (`action: none`),
+zařízení překresluje jen při skutečné změně obsahu. Nedostupný zdroj se nikdy nepovažuje za „prázdný“ a neskrývá se;
+kdyby se měly skrýt všechny panely, první zůstane. Neznámý panel, duplicita, víc než tři sloupce, `streams`
+s `kick`/`twitch`, chybný čas či den skončí srozumitelnou chybou konfigurace (server ponechá předchozí snímek).
+Panely mají pevné limity obsahu: řádky, které se celé nevejdou, se přesunou do skrytého sloupce, takže na e-inku
+nikdy není useknutý řádek.
+
+Šablony half/quadrant mají dál pevný obsah (počasí + Kick/Twitch); `[layout]` platí pro full layout. Náhledy:
+`preview/make_scenarios.py` vygeneruje `preview/scenarios/*.json` (běžný den, všechny streamy offline, dlouhé texty,
+varianty compact/shrink, …) a `preview/shot.py` je vyrenderuje cestou zařízení.
+
 ## Streamy: oblíbení, jen LIVE, společný seznam
 
 ```toml

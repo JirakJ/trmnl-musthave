@@ -23,6 +23,7 @@ from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
 from .alerts import alert_strip, fetch_alerts
+from .layout import active_view
 from .weather import fetch_weather, with_fallback
 
 log = logging.getLogger("musthave")
@@ -70,12 +71,18 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
     kick, rem_kick = with_last_good("kick", kick, last_kick, ts)
     twitch, rem_twitch = with_last_good("twitch", twitch, last_twitch, ts)
     host = settings.label or socket.gethostname().split(".")[0]
+    view, profile, layout_state = active_view(settings.layout, now, last_sources.get("layout"))
+    if settings.layout.profiles:
+        last_sources["layout"] = layout_state
+    else:
+        last_sources.pop("layout", None)
     extras = {}
     if alerts_state is not None:
         extras["alert"] = alert_strip(alerts_state, now, settings.alerts)
     payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,
                             battery_voltage=battery_voltage, saving=saving, max_bytes=max_bytes,
-                            location=settings.location_name, extras=extras, streams_cfg=settings.streams)
+                            location=settings.location_name, extras=extras, streams_cfg=settings.streams,
+                            view=view, profile=profile)
     return Collected(payload, rem_weather, rem_kick, rem_twitch, all_down(weather, kick, twitch),
                      last_sources or None)
 
