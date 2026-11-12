@@ -39,7 +39,7 @@ def write_json_atomic(path: Path, data) -> None:
 
 def _remember(state: State, col, sent_at: float | None = None, payload: dict | None = None) -> State:
     return State(sent_at if sent_at is not None else state.last_sent_at, payload if payload is not None else state.last_payload,
-                 col.last_weather, col.last_kick, col.last_twitch)
+                 col.last_weather, col.last_kick, col.last_twitch, col.sources)
 
 
 def _push(settings, http, state: State, col, now: datetime) -> State:
@@ -88,7 +88,8 @@ def tick(
     try:
         col = collect(http, settings, now, state.last_weather, fw=fw, last_kick=state.last_kick,
                       last_twitch=state.last_twitch, battery_voltage=seen.voltage if seen else None,
-                      saving=seen.saving if seen else None, max_bytes=None)  # lokální render: bez cloudového limitu
+                      saving=seen.saving if seen else None, max_bytes=None,  # lokální render: bez cloudového limitu
+                      last_sources=state.sources)
     except Exception as err:  # noqa: BLE001
         log.error("collect failed, keeping last frame: %s", err)
         return False

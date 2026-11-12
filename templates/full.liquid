@@ -51,6 +51,14 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   .mh-hour-l2 { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; }
   .mh-hour-bar { position: relative; flex: 0 0 7px; width: 7px; height: 24px; border: 1px solid #000; box-sizing: border-box; }
   .mh-hour-bar span { position: absolute; left: 0; right: 0; bottom: 0; background: #000; }
+  .mh-alert { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; flex-shrink: 0; min-height: 22px; box-sizing: border-box; border: 2px solid #000; padding: 1px 6px; font-size: 13px; white-space: nowrap; overflow: hidden; }
+  .mh-alert--high { background: #000; color: #fff; }
+  .mh-alert-tag { flex: 0 0 auto; font-weight: 800; letter-spacing: .04em; font-size: 12px; }
+  .mh-alert--high .mh-alert-tag { text-decoration: underline; }
+  .mh-alert-event { flex: 0 1 auto; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .mh-alert-valid { flex: 0 0 auto; font-weight: 600; }
+  .mh-alert-more { flex: 0 0 auto; font-size: 12px; border: 1.5px solid currentColor; padding: 0 4px; }
+  .mh-alert-src { flex: 0 0 auto; margin-left: auto; font-size: 11px; }
   .mh-saving { font-size: 11px; font-weight: 600; border: 1.5px solid #000; padding: 0 4px; margin-left: 2px; white-space: nowrap; }
   .mh-col-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
 </style>
@@ -66,8 +74,26 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
         <span aria-hidden="true">{% if battery_percent != nil %}{{ battery_percent }} %{% else %}— %{% endif %}</span>{% if saving %}<span class="mh-saving">{{ saving }}</span>{% endif %}
       </span>
     </span>
-    <span class="mh-head-meta">Jihlava · aktualizováno {{ updated }}{% if fw %} · FW {{ fw }}{% endif %}</span>
+    <span class="mh-head-meta">{% if location %}{{ location }} · {% endif %}aktualizováno {{ updated }}{% if fw %} · FW {{ fw }}{% endif %}</span>
   </div>
+
+  {% if alert and alert.hide != true %}
+  <div class="mh-alert{% if alert.level >= 3 %} mh-alert--high{% endif %}">
+    {% if alert.ok %}
+      {% if alert.count > 0 %}
+      <span class="mh-alert-tag">VÝSTRAHA · {{ alert.label }}</span>
+      <span class="mh-alert-event">{{ alert.event }}</span>
+      <span class="mh-alert-valid">{{ alert.valid }}</span>
+      {% if alert.count > 1 %}<span class="mh-alert-more">+{{ alert.count | minus: 1 }} další</span>{% endif %}
+      {% else %}
+      <span class="mh-alert-event">Bez platné výstrahy</span>
+      {% endif %}
+      <span class="mh-alert-src">{{ alert.src }}{% if alert.sent %} · vydáno {{ alert.sent }}{% endif %}{% if alert.stale %} · data z {{ alert.as_of | default: "dříve" }}{% endif %}</span>
+    {% else %}
+      <span class="mh-alert-event">Výstrahy {{ alert.src }} nedostupné</span>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="mh-weather">
     <div class="mh-weather-main">

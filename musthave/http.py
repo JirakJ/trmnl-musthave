@@ -19,6 +19,18 @@ class Http:
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             return resp.status, resp.read().decode("utf-8", errors="replace")
 
+    def get_bytes(self, url: str, max_bytes: int, headers: dict[str, str] | None = None) -> bytes:
+        """Stáhne nejvýš `max_bytes` (větší odpověď = ValueError, nečte se celá do paměti)."""
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
+        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            declared = resp.headers.get("Content-Length")
+            if declared and declared.isdigit() and int(declared) > max_bytes:
+                raise ValueError(f"response too large ({declared} B > {max_bytes} B)")
+            data = resp.read(max_bytes + 1)
+        if len(data) > max_bytes:
+            raise ValueError(f"response too large (> {max_bytes} B)")
+        return data
+
     def get_text(self, url: str, headers: dict[str, str] | None = None) -> str:
         return self._request(url, headers)[1]
 

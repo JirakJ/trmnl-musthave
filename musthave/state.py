@@ -17,12 +17,13 @@ class State:
     last_weather: dict | None = None   # {"ts", "weather"} – poslední dobré počasí
     last_kick: dict | None = None      # {"ts", "data"} – poslední dobrý stav Kick
     last_twitch: dict | None = None    # {"ts", "data"} – poslední dobrý stav Twitch
+    sources: dict | None = None        # další zdroje (alerts, agenda, …): {jméno: {"ts", "data", …}}
 
 
 def load_state(path: Path) -> State:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload", "last_weather", "last_kick", "last_twitch")})
+        return State(**{k: data.get(k) for k in ("last_sent_at", "last_payload", "last_weather", "last_kick", "last_twitch", "sources")})
     except FileNotFoundError:
         return State()
     except Exception as err:  # noqa: BLE001

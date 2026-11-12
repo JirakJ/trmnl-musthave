@@ -147,6 +147,35 @@ request (`hourly=temperature_2m,precipitation_probability,precipitation`, `timef
 
 Previews: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, rendered with `preview/shot.py`.
 
+## ČHMÚ weather warnings
+
+An optional strip under the header shows the most severe valid or upcoming ČHMÚ warning for the configured area:
+level (`nízký` / `vysoký` / `extrémní stupeň`; high levels are inverted black so they read without colour), event,
+validity, `+N další` when more warnings apply, the source and the issue time. It is an informative addition to the
+official warnings, not a replacement.
+
+```toml
+[alerts]
+area_codes = ["6105"]   # ORP codes from the ČSÚ codebook 65 (CISORP); Jihlava = 6105; empty = disabled
+feeds = ["50"]          # 50 = meteorological warnings (SIVS), 70 = hydrological drought
+refresh_minutes = 15    # listing check interval; a new XML is downloaded only when the file changes
+max_age_hours = 6       # cached warnings older than this → "Výstrahy ČHMÚ nedostupné"
+horizon_hours = 24      # show warnings starting within this time
+show_none = false       # true = show "Bez platné výstrahy" too
+```
+
+How the source is used (verified 11/2026 against <https://opendata.chmi.cz/meteorology/weather/alerts/cap/> and its
+`metadata/Dokumentace_CAP.pdf`): each `alert_cap_50_DDHHMM.xml` is a complete SIVS snapshot for the whole country;
+file names are recycled monthly, so the newest file is picked by its listing time, verified by `<sent>`, and an older
+message never replaces a newer cache. Areas are matched by `CISORP` geocodes, only Czech `<info>` blocks with an
+`awareness_level` and a certainty other than `Unlikely` count, `Cancel`/non-`Actual` messages carry no warnings, and
+warnings past `<expires>` (or `eventEndingTime`) disappear even from the cache. Priority: highest level, then earliest
+onset, then name. "No warning" (strip hidden or `Bez platné výstrahy`) is distinct from "source unavailable"
+(`Výstrahy ČHMÚ nedostupné`), so a dead feed never looks like an all-clear. The parser limits download size and the
+number of blocks and rejects DTD/ENTITY declarations (no entity expansion, no external references). Data: ČHMÚ open
+data (attribution "ČHMÚ" is shown on the strip; check the dataset entry in the national open-data catalogue for the
+current licence terms).
+
 ## Battery saving (night mode, low battery)
 
 Saving changes the `refresh_rate` the server sends to the device, so the device actually wakes up less often
