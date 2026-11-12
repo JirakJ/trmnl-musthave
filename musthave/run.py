@@ -22,6 +22,7 @@ from .streams import fill_item_errors
 from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
+from .agenda import agenda_panel, fetch_agenda
 from .alerts import alert_strip, fetch_alerts
 from .layout import active_view
 from .weather import fetch_weather, with_fallback
@@ -53,7 +54,7 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
     mají vlastní cache v `last_sources` a nikdy neshodí běh."""
     ts = now.timestamp()
     last_sources = dict(last_sources or {})
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=5) as pool:
         weather_f = pool.submit(fetch_weather, http, settings, now)
         kick_f = pool.submit(fetch_kick, http, settings.kick)
         twitch_f = pool.submit(fetch_twitch, http, settings.twitch, DEFAULT_CLIENT_ID)
@@ -61,9 +62,15 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
                     if settings.alerts.enabled else None)
         weather, kick = weather_f.result(), kick_f.result()
         twitch, _ = twitch_f.result()
-        alerts_state = None
+        agenda_f = (pool.submit(fetch_agenda, http, settings.agenda, last_sources.get("agenda"), now)
+                    if settings.agenda.enabled else None)
+        alerts_state = agenda_state = None
         if alerts_f is not None:
             alerts_state, last_sources["alerts"] = alerts_f.result()
+        if agenda_f is not None:
+            agenda_state, last_sources["agenda"] = agenda_f.result()
+        else:
+            last_sources.pop("agenda", None)
     weather, rem_weather = with_fallback(weather, last_weather, ts)
     # chyba jednoho kanálu ≠ přechod do offline: převezme poslední známý stav (stale) z cache zdroje
     kick = fill_item_errors(kick, last_kick, ts, STALE_MAX_S["kick"])
@@ -76,7 +83,7 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         last_sources["layout"] = layout_state
     else:
         last_sources.pop("layout", None)
-    extras = {}
+    extras = {"agenda": agenda_panel(agenda_state, now, settings.agenda)}
     if alerts_state is not None:
         extras["alert"] = alert_strip(alerts_state, now, settings.alerts)
     payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,

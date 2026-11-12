@@ -184,6 +184,46 @@ The half/quadrant templates keep their fixed content (weather + Kick/Twitch); `[
 Previews: `preview/make_scenarios.py` generates `preview/scenarios/*.json` (normal day, all streams offline, long
 texts, compact/shrink variants, …) and `preview/shot.py` renders them through the device pipeline.
 
+## Agenda from ICS calendars
+
+An `agenda` panel (add it to `[layout] panels`) lists the next events of today and tomorrow from one or more ICS feeds
+(read-only): time, title and optionally the place; ongoing events show `TEĎ`, all-day events `celý den`, an empty
+day `Dnes bez událostí`, more events `+N dalších`.
+
+Calendar addresses usually contain a secret token, so they are **never** read from the public `config.toml` (it
+fails with an error if you try): put them into the git-ignored `config.local.toml` or the environment / `.env`:
+
+```toml
+# config.local.toml
+[agenda]
+sources = ["https://calendar.google.com/calendar/ical/…/private-…/basic.ics", "/home/pi/exported.ics"]
+```
+
+```
+MUSTHAVE_ICS_URLS="webcal://… https://…"   # whitespace-separated, merged with config.local.toml
+```
+
+Other `[agenda]` keys may stay in `config.toml`: `days` (2 = today + tomorrow), `max_items` (5), `private` (true =
+titles shown as `Obsazeno`, no places), `show_location`, `refresh_minutes` (15), `max_age_hours` (12). `webcal://`
+becomes `https://`, credentials in the URL (`https://user:pass@…`) are sent as HTTP Basic. Addresses never reach the
+payload, the state file or the logs (sources are identified by number and a hash; errors are logged as
+`agenda source #1 failed: HTTP 404`).
+
+Supported iCalendar subset (RFC 5545, stdlib parser in `musthave/ics.py`): `VEVENT` with `DTSTART`/`DTEND`/`DURATION`
+in UTC, with `TZID` (IANA names plus common Windows names from Outlook/Exchange; unknown zones fall back to the
+dashboard zone) or floating; all-day `VALUE=DATE` (also multi-day); `RRULE` with `FREQ=DAILY|WEEKLY|MONTHLY|YEARLY`,
+`INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `1MO`/`-1FR` monthly), `BYMONTHDAY`, `BYMONTH`; `EXDATE`, `RDATE`,
+`RECURRENCE-ID` (moved or cancelled instance), `STATUS:CANCELLED`. Recurrences keep the local start time across DST
+changes. Events with other `RRULE` parts (`BYSETPOS`, `BYHOUR`, …) are skipped and counted in the log rather than
+shown wrongly; `VTIMEZONE` definitions are not interpreted. Limits: 3 MB per feed, 15 s timeout, 20 000 events,
+recurrence expansion only inside the window and at most 3 000 steps per event (long-running daily series are
+fast-forwarded). Ordering is stable: day → all-day first → start → end → calendar order → title.
+
+Outages: each feed is fetched at most every `refresh_minutes` (retry after 2 min on error); a failing feed uses its
+cached events for up to `max_age_hours` and the panel shows `data z HH:MM`; older cache is not shown as the current
+agenda (`Agenda nedostupná`, or `část kalendářů nedostupná` when only some feeds fail). Verified with a real Google
+Calendar export.
+
 ## Streams: favourites, LIVE-only, combined list
 
 ```toml

@@ -18,8 +18,10 @@ PANEL_TITLES = {
     "kick": ("KICK", "Kick nedostupný"),
     "twitch": ("TWITCH", "Twitch nedostupný"),
     "streams": ("STREAMY", "Streamy nedostupné"),
+    "agenda": ("AGENDA", "Agenda nedostupná"),
 }
-WEATHER_VARIANTS = ("full", "compact", "off")
+NOT_CONFIGURED = {"agenda": "Kalendář není nastavený"}
+WEATHER_VARIANTS =("full", "compact", "off")
 MAX_PANELS = 3
 DAYS = {"po": 0, "ut": 1, "út": 1, "st": 2, "ct": 3, "čt": 3, "pa": 4, "pá": 4, "so": 5, "ne": 6,
         "mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
@@ -231,6 +233,8 @@ def resolve_panels(view: View, sections: dict[str, dict | None]) -> list[dict]:
         empty = is_empty(key, sections.get(key))
         if empty and key in view.hide_empty:
             continue
+        if sections.get(key) is None and key in NOT_CONFIGURED:
+            na = NOT_CONFIGURED[key]
         panel = {"key": key, "title": title, "na": na, "w": view.width(key)}
         if empty and key in view.shrink_empty:
             panel["compact"] = True
