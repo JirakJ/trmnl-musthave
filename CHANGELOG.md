@@ -4,6 +4,11 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-12
+
+All ten backlog issues (#8–#17). Package version in `musthave.__version__`, shown on `/status` and in `/status.json`
+(the deploy script checks it).
+
 ### Added
 - **status** (#8): `/status` and `/status.json` distinguish the rendered, offered and firmware-confirmed frame (confirmation = the next `X-Frame-Id`), store the last valid RSSI with its measurement time (documented % conversion), show last contact, battery estimate, firmware and the expected next contact from the interval the device actually received; `opožděné`/`neaktivní` only after `offline_tolerance_seconds`. Source freshness comes from the last successful fetch; stale sources show `data z HH:MM` on the screen.
 - **battery saving** (#11): optional quiet window (`quiet_start`/`quiet_end`, across midnight and DST, wake-up at its end) and low-battery mode with hysteresis (`low_battery_enter`/`low_battery_exit`) change the `refresh_rate` sent to the device; rule order OTA → forced `saving_mode` → power → low battery → quiet; `max_refresh_seconds` cap; `/status` and a short tag next to the battery explain the active mode. Defaults keep the previous behaviour; `config.toml` enables 00:00–06:00 and 20/25 %.
@@ -74,5 +79,6 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 - Legacy BYOS server (`/api/setup`, `/api/display`, `/api/log`, `/screens/<name>`) compatible with the stock TRMNL firmware.
 - Collector for weather (Open-Meteo), Kick and Twitch live status without developer applications; Liquid templates for the four TRMNL layouts; TRMNL cloud push (webhook or authenticated data endpoint).
 
-[Unreleased]: https://github.com/JirakJ/trmnl-musthave/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/JirakJ/trmnl-musthave/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/JirakJ/trmnl-musthave/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/JirakJ/trmnl-musthave/compare/v1.5.0...v1.6.0

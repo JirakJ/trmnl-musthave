@@ -394,10 +394,11 @@ rollbacku – spící displej není chyba nasazení. Shrnutí se uloží do `sta
 
 ```
 musthave/   config, http, weather, kick, twitch, payload, state, trmnl (odesílání), run,
+            alerts (ČHMÚ CAP), ics + agenda, reminders, streams, layout, status, admin + tomlw,
             screen (render) + frames + diff + policy + devices + server + serve (BYOS v1), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
-preview/    render.py, sample.json (reálný payload), screenshoty
-deploy/     systemd jednotky + timer, install.sh, push_plugin.sh, launchd plisty, BYOS server unit
+preview/    render.py, shot.py (1-bit render jako zařízení), make_scenarios.py → scenarios/*.json, sample.json
+deploy/     systemd jednotky + timer, install.sh, deploy_server.py, push_plugin.sh, launchd plisty, BYOS server unit
 tests/      pytest, fixtures z reálných odpovědí
 docs/superpowers/  spec + implementační plán
 ```

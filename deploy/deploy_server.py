@@ -237,6 +237,9 @@ class Deployer:
                     w, h, depth, color = png_info(self.http(plan.port, f"/frames/{frame}.png"))
                     if (w, h, depth, color) != (800, 480, 1, 0):
                         raise DeployError(f"frame is not 1-bit 800x480 ({w}x{h}, depth {depth}, color {color})")
+                    want = plan.tag[1:] if plan.tag[:1] == "v" and plan.tag[1:2].isdigit() else None
+                    if want and status.get("version") and status["version"] != want:
+                        raise DeployError(f"server reports version {status['version']}, expected {want}")
                     return status
                 except (DeployError, ValueError, json.JSONDecodeError) as err:
                     last_err = str(err)
