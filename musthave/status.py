@@ -205,7 +205,7 @@ def render_html(status: dict[str, Any]) -> str:
 td,th{{text-align:left;padding:3px 10px 3px 0;vertical-align:top}}img{{max-width:100%;height:auto;border:1px solid #888}}</style></head>
 <body><h1>TRMNL Must-have BYOS v1</h1>
 <p>Vyrenderovaný snímek: <b>{e(latest)}</b> ({e(_short(status.get('frame_rendered_at')))}) · nabízený firmware: {e(status.get('firmware_offered'))}
-· <a href="/status.json">JSON</a></p>
+· <a href="/status.json">JSON</a> · <a href="/admin">správa</a></p>
 <h2>Data (poslední úspěšné získání)</h2><table>{''.join(rows)}</table>
 {''.join(devs)}
 {img}

@@ -313,6 +313,32 @@ vychází z posledního věrohodného napětí; neznámé nebo nevěrohodné mě
 0 %). Dlouhé intervaly se zarovnávají na sloty `align_minutes`. `/status` ukazuje aktivní režim, jeho důvod
 a očekávaný další kontakt; full layout má u baterie krátký štítek `noční režim` / `úspora`.
 
+## Webová správa v domácí síti (`/admin`)
+
+`http://<host>:<port>/admin` upraví běžná nastavení bez ruční editace TOML: lokalitu (název, souřadnice, časová
+zóna), kanály Kick/Twitch, režim streamů, oblíbené, limit a společný seznam, vlastní odpočty a základní panely full
+layoutu / variantu počasí / skrývání prázdných panelů. Profily, připomínky a zdroje kalendářů zůstávají
+v `config.local.toml` (stránka ukáže jen počet nastavených kalendářů, nikdy jejich adresy). Dnešní připomínky lze
+na stránce označit jako splněné.
+
+- **Přístup**: lokálně spravovaný token v `state/admin_token` (0600). Na serveru ho vypíše
+  `python3 -m musthave admin-token`; nikdy se neloguje. Po přihlášení relace v cookie (`HttpOnly`,
+  `SameSite=Strict`, jen v paměti, 12 h); každý zápis vyžaduje CSRF token relace a `Origin`/`Referer` ze stejného
+  hostitele; neúspěšná přihlášení jsou omezená.
+- **Ukládání**: zapisuje se jen `config.local.toml`; hodnoty shodné s veřejným `config.toml` se vynechají, aby
+  pozdější změny v Gitu nebyly zamaskované; ostatní sekce (`[server]`, `[agenda]`, …) zůstávají. Odpočty
+  z `config.toml` jsou jen ke čtení a zapisují se jen vlastní položky, takže opakované uložení nevytváří duplicity.
+  Tajemství zůstávají v `.env`/prostředí a na stránce se nikdy neobjeví.
+- **Validace**: neplatné souřadnice, časová zóna, data, jména kanálů či rozložení dají konkrétní chybu a nic se
+  nezapíše; celý nový soubor se navíc ověří stejným `load_settings` jako na serveru. Zápis je atomický (dočasný
+  soubor + rename) a předchozí verze zůstane v `config.local.toml.bak` (`Obnovit předchozí nastavení`).
+- **Náhled vs. aktivace**: `Náhled` vyrenderuje koncept stejnou cestou jako displej (čerstvá data → `build_payload`
+  → Chromium → 1-bit PNG), nic neuloží a snímek nedá do úložiště, takže ho zařízení nedostane. `Uložit
+  a aktivovat` je samostatná aktivace; projeví se při dalším renderu. Stránka ukazuje, zda je aktuální konfigurace
+  uložená, vyrenderovaná (`render.json` nese hash konfigurace snímku) a potvrzená firmwarem (`X-Frame-Id` snímku).
+
+Změny klíčů `[server]` (port, intervaly, úsporná politika) dál vyžadují restart služby.
+
 ## Stránka stavu (`/status`, `/status.json`)
 
 BYOS server ukazuje čitelný přehled na `http://<host>:<port>/status` (JSON na `/status.json`):

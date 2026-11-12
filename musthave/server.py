@@ -49,6 +49,7 @@ def make_server(
     firmware_dir: Path | None = None,
     clock: Callable[[], datetime] | None = None,
     root: Path | None = None,
+    admin=None,
 ) -> ThreadingHTTPServer:
     now_fn = clock or datetime.now
     fw_dir = Path(firmware_dir) if firmware_dir else None
@@ -253,14 +254,36 @@ def make_server(
                 self._status_page()
             elif path == "/status.json":
                 self._json(200, self._status())
+            elif path == "/admin" or path.startswith("/admin/"):
+                self._admin("GET", path, b"")
             else:
                 self.send_error(404)
 
+        def _admin(self, method: str, path: str, body: bytes) -> None:
+            if admin is None:
+                self.send_error(404)
+                return
+            code, headers, payload = admin.handle(method, path, self.headers, body)
+            self.send_response(code)
+            for name, value in headers.items():
+                self.send_header(name, value)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
         def do_POST(self) -> None:
             path = urlparse(self.path).path
-            length = int(self.headers.get("Content-Length") or 0)
-            raw = self.rfile.read(length) if length else b""
-            if path == "/api/log":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length > 256 * 1024:
+                self.send_error(413)
+                return
+            raw = self.rfile.read(length) if length > 0 else b""
+            if path == "/admin" or path.startswith("/admin/"):
+                self._admin("POST", path, raw)
+            elif path == "/api/log":
                 log.warning("device log (ID %s): %s", self.headers.get("ID"), raw[:500].decode("utf-8", "replace"))
                 self._json(200, {"status": 200})
             elif path in ("/api/setup", "/api/display"):

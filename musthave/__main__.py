@@ -61,6 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="vypsat zařízení z TRMNL účtu")
     ota_p = sub.add_parser("ota-mode", help="OTA čekací režim zařízení (on = polling 20 s bez kreslení, dokud nepřijde update)")
     ota_p.add_argument("state", choices=["on", "off", "status"])
+    sub.add_parser("admin-token", help="vypsat (případně vytvořit) přístupový token webové správy /admin")
     done_p = sub.add_parser("done", help="označit výskyt připomínky jako splněný (jen ten den, ne celé opakování)")
     done_p.add_argument("name", help="název připomínky z [[reminder]]")
     done_p.add_argument("--date", default=None, help="datum výskytu YYYY-MM-DD (výchozí dnes)")
@@ -92,6 +93,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.state == "off":
             flag.unlink(missing_ok=True)
         print("ota-mode:", "on" if flag.exists() else "off")
+        return 0
+    if cmd == "admin-token":
+        from .admin import ensure_token
+
+        print(ensure_token(ROOT))
         return 0
     if cmd == "done":
         return mark_done(ROOT, args.name, args.date, args.undo)

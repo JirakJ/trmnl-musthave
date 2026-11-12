@@ -329,6 +329,34 @@ previous state instead of pretending 0 %. Long intervals are aligned to the `ali
 the active mode, its reason and the expected next contact; the full layout shows a short `noční režim` / `úspora`
 tag next to the battery.
 
+## Web admin in the home network (`/admin`)
+
+`http://<host>:<port>/admin` edits the everyday settings without touching TOML by hand: location (name,
+coordinates, timezone), Kick/Twitch channels, stream mode, favourites, limit and combined list, your own countdowns
+and the base full-layout panels / weather variant / hidden empty panels. Profiles, reminders and calendar sources
+stay in `config.local.toml` (the page only shows how many calendars are configured, never their addresses). Today's
+reminders can be marked done there.
+
+- **Access**: a locally managed token in `state/admin_token` (0600). Show it on the server with
+  `python3 -m musthave admin-token`; it is never logged. After login a session cookie (`HttpOnly`,
+  `SameSite=Strict`, in memory only, 12 h) is used; every write needs the session's CSRF token and a same-origin
+  `Origin`/`Referer`; failed logins are rate-limited.
+- **Storage**: only `config.local.toml` is written; values equal to the public `config.toml` are left out so later
+  changes in Git are not masked; other sections (`[server]`, `[agenda]`, …) are kept. Countdowns from `config.toml`
+  are read-only and only your own entries are written, so saving repeatedly never duplicates them. Secrets stay in
+  `.env`/environment and never appear on the page.
+- **Validation**: invalid coordinates, timezone, dates, channel names or layout produce specific messages and
+  nothing is written; the whole new file is also checked by the same `load_settings` the server uses. Writes are
+  atomic (temp file + rename) and the previous version is kept in `config.local.toml.bak` (`Obnovit předchozí
+  nastavení`).
+- **Preview vs. activation**: `Náhled` renders the draft through the same pipeline as the display (fresh data →
+  `build_payload` → Chromium → 1-bit PNG) without saving anything and without putting the frame into the store, so
+  the device never receives it. `Uložit a aktivovat` is the separate activation; the next render picks it up. The
+  page shows whether the current configuration is saved, rendered (`render.json` records the configuration hash of
+  the frame) and confirmed by the firmware (`X-Frame-Id` of that frame).
+
+Changes of `[server]` keys (port, intervals, saving policy) still need a service restart.
+
 ## Status page (`/status`, `/status.json`)
 
 The BYOS server shows a readable overview at `http://<host>:<port>/status` (JSON at `/status.json`):
