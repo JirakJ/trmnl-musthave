@@ -275,27 +275,41 @@ class Deployer:
                     expected = self.clock() + 300
                 waits.append(max(0.0, expected - self.clock()) + DEFAULT_ACK_TOLERANCE_S)
             timeout_s = int(min(MAX_ACK_WAIT_S, min(waits)))
-        deadline = self.clock() + timeout_s
-        offered = False
+        started = self.clock()
+        deadline = started + timeout_s
+        hard_deadline = started + MAX_ACK_WAIT_S
+        offered = None
+        since = activated_at - 1
+
+        def ts(value) -> float:
+            try:
+                return datetime.fromisoformat(value).timestamp() if value else 0.0
+            except (TypeError, ValueError):
+                return 0.0
+
         while True:
             try:
                 status = self.status(plan.port)
             except (DeployError, ValueError):
                 status = {}
-            frame = status.get("frame_rendered") or frame
             for dev in status.get("devices") or []:
-                acked_at = dev.get("frame_acknowledged_at")
-                acked_ts = datetime.fromisoformat(acked_at).timestamp() if acked_at else 0
-                if dev.get("frame_offered") == frame:
-                    offered = True
-                seen = dev.get("last_seen")
-                seen_ts = datetime.fromisoformat(seen).timestamp() if seen else 0
-                shown_now = dev.get("frame_shown") == frame and seen_ts >= activated_at - 1  # X-Frame-Id po aktivaci
-                if frame and ((dev.get("frame_acknowledged") == frame and acked_ts >= activated_at - 1) or shown_now):
-                    return {"state": "confirmed", "device": dev.get("id"), "frame": frame, "acknowledged_at": acked_at}
+                # Server renderuje průběžně, takže potvrzený snímek nemusí být ten nejnovější: rozhoduje snímek
+                # NABÍDNUTÝ po aktivaci (vyrenderovaný už novou verzí) a jeho X-Frame-Id v dalším dotazu.
+                offered_frame = dev.get("frame_offered")
+                if not offered_frame or ts(dev.get("frame_offered_at")) < since:
+                    continue
+                offered = offered_frame
+                if (dev.get("frame_acknowledged") == offered_frame and ts(dev.get("frame_acknowledged_at")) >= since) \
+                        or (dev.get("frame_shown") == offered_frame and ts(dev.get("last_seen")) >= since):
+                    return {"state": "confirmed", "device": dev.get("id"), "frame": offered_frame,
+                            "acknowledged_at": dev.get("frame_acknowledged_at") or dev.get("last_seen")}
+                # snímek nabídnut: počkat do jeho naplánovaného probuzení + tolerance (ne déle než MAX_ACK_WAIT_S)
+                wake = ts(dev.get("next_expected"))
+                if wake:
+                    deadline = max(deadline, min(hard_deadline, wake + DEFAULT_ACK_TOLERANCE_S))
             if self.clock() >= deadline:
-                return {"state": "offered-unconfirmed" if offered else "not-contacted", "frame": frame,
-                        "waited_s": timeout_s}
+                return {"state": "offered-unconfirmed" if offered else "not-contacted", "frame": offered or frame,
+                        "waited_s": int(self.clock() - started)}
             self.sleep(30)
 
     # celé příkazy ------------------------------------------------------------------------------------------
