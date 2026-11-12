@@ -172,6 +172,46 @@ nikdy není useknutý řádek.
 `preview/make_scenarios.py` vygeneruje `preview/scenarios/*.json` (běžný den, všechny streamy offline, dlouhé texty,
 varianty compact/shrink, …) a `preview/shot.py` je vyrenderuje cestou zařízení.
 
+## Agenda z ICS kalendářů
+
+Panel `agenda` (přidej ho do `[layout] panels`) ukazuje nejbližší události dneška a zítřka z jednoho či více ICS
+zdrojů (jen čtení): čas, název a volitelně místo; probíhající událost má `TEĎ`, celodenní `celý den`, prázdný den
+`Dnes bez událostí`, další události `+N dalších`.
+
+Adresy kalendářů obvykle obsahují tajný token, proto se **nikdy** nečtou z veřejného `config.toml` (skončí chybou):
+patří do negitovaného `config.local.toml` nebo do prostředí / `.env`:
+
+```toml
+# config.local.toml
+[agenda]
+sources = ["https://calendar.google.com/calendar/ical/…/private-…/basic.ics", "/home/pi/export.ics"]
+```
+
+```
+MUSTHAVE_ICS_URLS="webcal://… https://…"   # oddělené mezerou, spojí se s config.local.toml
+```
+
+Ostatní klíče `[agenda]` mohou být v `config.toml`: `days` (2 = dnes + zítra), `max_items` (5), `private` (true =
+názvy jako `Obsazeno`, bez míst), `show_location`, `refresh_minutes` (15), `max_age_hours` (12). `webcal://` se
+změní na `https://`, přihlašovací údaje v URL (`https://user:heslo@…`) se pošlou jako HTTP Basic. Adresy se nikdy
+nedostanou do payloadu, stavového souboru ani logů (zdroj se označuje pořadím a otiskem; chyba se loguje jako
+`agenda source #1 failed: HTTP 404`).
+
+Podporovaný rozsah iCalendar (RFC 5545, parser ze standardní knihovny v `musthave/ics.py`): `VEVENT` s `DTSTART`/
+`DTEND`/`DURATION` v UTC, s `TZID` (IANA názvy i běžné Windows názvy z Outlooku/Exchange; neznámá zóna = zóna
+dashboardu) nebo plovoucí; celodenní `VALUE=DATE` (i vícedenní); `RRULE` s `FREQ=DAILY|WEEKLY|MONTHLY|YEARLY`,
+`INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (i `1MO`/`-1FR` měsíčně), `BYMONTHDAY`, `BYMONTH`; `EXDATE`, `RDATE`,
+`RECURRENCE-ID` (přesunutá či zrušená instance), `STATUS:CANCELLED`. Opakování drží místní čas začátku i přes změnu
+času. Události s jinými částmi `RRULE` (`BYSETPOS`, `BYHOUR`, …) se přeskočí a započítají v logu, místo aby se
+ukázaly špatně; definice `VTIMEZONE` se neinterpretují. Limity: 3 MB na zdroj, timeout 15 s, 20 000 událostí,
+rozbalování opakování jen v okně a nejvýš 3 000 kroků na událost (dlouholeté denní řady se přetočí dopředu).
+Řazení je stabilní: den → celodenní první → začátek → konec → pořadí kalendáře → název.
+
+Výpadky: každý zdroj se stahuje nejvýš jednou za `refresh_minutes` (po chybě znovu za 2 min); selhávající zdroj
+použije svou cache nejvýš `max_age_hours` a panel ukáže `data z HH:MM`; starší cache se za aktuální agendu
+nevydává (`Agenda nedostupná`, případně `část kalendářů nedostupná`, když selže jen část zdrojů). Ověřeno na
+reálném exportu z Google Kalendáře.
+
 ## Streamy: oblíbení, jen LIVE, společný seznam
 
 ```toml

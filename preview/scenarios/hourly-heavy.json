@@ -1,0 +1,195 @@
+{
+ "updated": "14:05",
+ "location": "Jihlava",
+ "date": "Čtvrtek 12. 11. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 64,
+ "saving": null,
+ "weather": {
+  "ok": true,
+  "temp": 8.4,
+  "feels": 5.9,
+  "hum": 81,
+  "wind": 17,
+  "code": 61,
+  "label": "Déšť",
+  "days": [
+   {
+    "d": "Čt",
+    "hi": 9,
+    "lo": 3,
+    "p": 90,
+    "code": 61,
+    "label": "Déšť"
+   },
+   {
+    "d": "Pá",
+    "hi": 7,
+    "lo": 1,
+    "p": 20,
+    "code": 3,
+    "label": "Zataženo"
+   },
+   {
+    "d": "So",
+    "hi": 6,
+    "lo": -1,
+    "p": 5,
+    "code": 1,
+    "label": "Skoro jasno"
+   }
+  ],
+  "hours": [
+   {
+    "ts": 1794488400,
+    "h": "14",
+    "t": 8,
+    "p": 10,
+    "mm": 0.0
+   },
+   {
+    "ts": 1794492000,
+    "h": "15",
+    "t": 9,
+    "p": 60,
+    "mm": 2.5
+   },
+   {
+    "ts": 1794495600,
+    "h": "16",
+    "t": 9,
+    "p": 90,
+    "mm": 18.0
+   },
+   {
+    "ts": 1794499200,
+    "h": "17",
+    "t": 8,
+    "p": 85,
+    "mm": 6.1
+   },
+   {
+    "ts": 1794502800,
+    "h": "18",
+    "t": 7,
+    "p": 40,
+    "mm": 0.4
+   },
+   {
+    "ts": 1794506400,
+    "h": "19",
+    "t": 6,
+    "p": 10,
+    "mm": 0.0
+   }
+  ],
+  "rain": "Nejvyšší šance srážek 16⁠–⁠18 h (90 %) · 27,0 mm"
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1000,
+    "g": "Valheim",
+    "s": "12:02"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 900,
+    "g": "Valheim",
+    "s": "12:02"
+   },
+   {
+    "n": "Fattypillow",
+    "live": false
+   },
+   {
+    "n": "Czechfather",
+    "live": false
+   },
+   {
+    "n": "Czechcloud",
+    "live": false
+   }
+  ],
+  "live": 2
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 4300,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Artemis",
+    "live": true,
+    "v": 3600,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 800,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Arcadebulls",
+    "live": false
+   },
+   {
+    "n": "Cruelladk",
+    "live": false
+   },
+   {
+    "n": "Conducteir77",
+    "live": false
+   },
+   {
+    "n": "Oliverovykecy",
+    "live": false
+   }
+  ],
+  "live": 3
+ },
+ "countdowns": [
+  {
+   "n": "GTA VI",
+   "days": 7,
+   "label": "7 dní",
+   "d": "19. 11."
+  },
+  {
+   "n": "Vánoce",
+   "days": 42,
+   "label": "42 dní",
+   "d": "24. 12."
+  }
+ ],
+ "layout": {
+  "weather": "full"
+ },
+ "panels": [
+  {
+   "key": "kick",
+   "title": "KICK",
+   "na": "Kick nedostupný",
+   "w": 1
+  },
+  {
+   "key": "twitch",
+   "title": "TWITCH",
+   "na": "Twitch nedostupný",
+   "w": 1
+  }
+ ]
+}

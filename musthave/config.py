@@ -11,6 +11,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Mapping
 
+from .agenda import AgendaConfig
 from .alerts import AlertsConfig
 from .layout import LayoutConfig, LayoutError, parse_layout
 from .policy import PolicyConfig
@@ -81,6 +82,7 @@ class Settings:
     alerts: AlertsConfig = AlertsConfig()   # [alerts] – výstrahy ČHMÚ (vypnuto, dokud není nastavena oblast)
     streams: StreamsConfig = StreamsConfig()  # [streams] mode / favorites / max_items / combined
     layout: LayoutConfig = LayoutConfig()     # [layout] panely, varianty, profily
+    agenda: AgendaConfig = AgendaConfig()     # [agenda] – zdroje jen z config.local.toml / MUSTHAVE_ICS_URLS
 
 
 class ConfigError(ValueError):
@@ -151,6 +153,9 @@ def load_settings(
     if secret_lookup is _USE_KEYCHAIN:
         secret_lookup = keychain_lookup  # rozhoduje se až za běhu, aby šlo v testech nahradit
     raw = tomllib.loads((root / "config.toml").read_text(encoding="utf-8"))
+    if isinstance(raw.get("agenda"), dict) and raw["agenda"].get("sources"):
+        # soukromé adresy kalendářů nepatří do veřejného (gitovaného) config.toml
+        raise ConfigError("[agenda] sources patří do config.local.toml nebo do MUSTHAVE_ICS_URLS, ne do config.toml")
     local = root / "config.local.toml"  # host-specifické hodnoty (port, label…), negitované a rsync je vynechá
     if local.exists():
         for table, values in tomllib.loads(local.read_text(encoding="utf-8")).items():
@@ -215,7 +220,36 @@ def load_settings(
         alerts=parse_alerts(raw.get("alerts", {})),
         streams=(streams_cfg := parse_streams(streams)),
         layout=_parse_layout(raw.get("layout"), streams_cfg.combined),
+        agenda=parse_agenda(raw.get("agenda", {}), merged.get("MUSTHAVE_ICS_URLS", "")),
     )
+
+
+def parse_agenda(raw: dict, env_sources: str = "") -> AgendaConfig:
+    """[agenda] (bez sources v config.toml) + sources z config.local.toml a/nebo MUSTHAVE_ICS_URLS."""
+    if not isinstance(raw, dict):
+        raise ConfigError("[agenda] musí být tabulka")
+    sources = []
+    listed = raw.get("sources", [])
+    if isinstance(listed, str):
+        listed = [listed]
+    for entry in list(listed) + env_sources.split():
+        text = str(entry).strip()
+        if not text:
+            continue
+        if not (text.startswith(("https://", "http://", "webcal://", "webcals://", "/", "~/"))):
+            raise ConfigError("[agenda] sources: zdroj musí být https/webcal URL nebo absolutní cesta k .ics")
+        if text not in sources:
+            sources.append(text)
+    days = int(raw.get("days", 2))
+    max_items = int(raw.get("max_items", 5))
+    if not 1 <= days <= 7:
+        raise ConfigError("[agenda] days: 1–7")
+    if not 1 <= max_items <= 8:
+        raise ConfigError("[agenda] max_items: 1–8")
+    return AgendaConfig(sources=tuple(sources), days=days, max_items=max_items, private=bool(raw.get("private", False)),
+                        show_location=bool(raw.get("show_location", True)),
+                        refresh_minutes=max(5, int(raw.get("refresh_minutes", 15))),
+                        max_age_hours=max(1, int(raw.get("max_age_hours", 12))))
 
 
 def _parse_layout(raw, combined: bool) -> LayoutConfig:

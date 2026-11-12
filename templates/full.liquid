@@ -67,6 +67,12 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   .mh-col--compact { flex: 0 0 150px !important; width: 150px !important; }
   .mh-weather--compact .mh-weather-main .mh-temp { font-size: 48px; }
   .mh-weather--compact .mh-day .mh-temps { font-size: 16px; }
+  .mh-agenda-day { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: 3px 0 1px; border-bottom: 1px solid #000; }
+  .mh-agenda-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; min-height: 30px; border-bottom: 1px solid #000; }
+  .mh-agenda-row:last-child { border-bottom: none; }
+  .mh-agenda-time { flex: 0 0 58px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; padding: 1px 0; border: 1.5px solid #000; white-space: nowrap; }
+  .mh-agenda-time--all { font-size: 11px; padding: 3px 0; }
+  .mh-agenda-row--now .mh-agenda-time { background: #000; color: #fff; }
   .mh-pf { flex: 0 0 auto; width: 16px; height: 16px; line-height: 14px; text-align: center; font-size: 11px; font-weight: 800; border: 1.5px solid #000; box-sizing: border-box; }
   .mh-empty { font-size: 14px; font-weight: 600; padding: 6px 0; flex-shrink: 0; }
   .mh-more { font-size: 12px; font-weight: 600; padding: 2px 0; flex-shrink: 0; }
@@ -180,6 +186,31 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
         {% if sec.items.size == 0 %}<div class="mh-empty">Nikdo nevysílá</div>{% endif %}
         {% if sec.more %}<div class="mh-more">+{{ sec.more }} dalších</div>{% endif %}
         {% if sec.offline %}<div class="mh-offline">offline: {{ sec.offline | join: ", " }}</div>{% endif %}
+        </div>
+      {% else %}
+        <span class="description">{{ panel.na }}</span>
+      {% endif %}
+      {% endif %}
+      {% if panel.key == "agenda" %}
+      <div class="mh-col-head">
+        <span class="title title--small">{{ panel.title }}</span>
+        <span class="label label--small">{% if agenda.partial %}část kalendářů nedostupná{% endif %}{% if agenda.stale %}{% if agenda.partial %} · {% endif %}data z {{ agenda.as_of | default: "dříve" }}{% endif %}</span>
+      </div>
+      {% if agenda.ok %}
+        <div class="mh-list">
+        {% if agenda.today_empty %}<div class="mh-empty">Dnes bez událostí</div>{% endif %}
+        {% assign lastday = "dnes" %}
+        {% for ev in agenda.items %}
+        {% if ev.day != lastday %}<div class="mh-agenda-day">{{ ev.day }}</div>{% assign lastday = ev.day %}{% endif %}
+        <div class="mh-agenda-row{% if ev.now %} mh-agenda-row--now{% endif %}">
+          <span class="mh-agenda-time{% if ev.all %} mh-agenda-time--all{% endif %}">{% if ev.all %}celý den{% elsif ev.now %}TEĎ{% else %}{{ ev.t }}{% endif %}</span>
+          <div class="mh-who">
+            <span class="mh-name">{{ ev.n }}</span>
+            <span class="mh-game">{% if ev.all %}celodenní{% else %}{{ ev.t }}–{{ ev.e }}{% endif %}{% if ev.l %} · {{ ev.l }}{% endif %}</span>
+          </div>
+        </div>
+        {% endfor %}
+        {% if agenda.more %}<div class="mh-more">+{{ agenda.more }} dalších</div>{% endif %}
         </div>
       {% else %}
         <span class="description">{{ panel.na }}</span>

@@ -77,6 +77,7 @@ def build(name, w=None, k=None, t=None, now=NOW, cfg=StreamsConfig(), view=None,
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     build("default")
+    build("hourly-heavy", w=weather(probs=[0, 10, 60, 90, 85, 40, 10], rains=[0, 0, 2.5, 18.0, 6.1, 0.4, 0]))
     build("hourly-dry", w=weather(probs=[0, 5, 5, 0, 0, 10, 0], rains=[0] * 7))
     build("hourly-missing", w=weather(temps=[10, None, 12, None, None, None, None],
                                       probs=[None, 30, None, None, None, None, None], rains=[None, 0.5, None, None, None, None, None]))
@@ -103,6 +104,18 @@ def main() -> None:
     long_t = {"ok": True, "items": [item(i, True, 99999, "Warhammer 40,000: Space Marine 2 – Ultra Deluxe Edition",
                                          n="Velmidlouhejmenostreamera" + str(k)) for k, i in enumerate(TWITCH_IDS)]}
     build("layout-long-texts", t=long_t, view=View(panels=("twitch", "kick"), widths=(("twitch", 2),), weather="off"))
+    # #10 agenda
+    agenda = {"ok": True, "items": [
+        {"day": "dnes", "n": "Týdenní porada týmu", "t": "13:30", "e": "14:30", "now": True, "l": "Zasedačka 2. patro"},
+        {"day": "dnes", "n": "Zubař", "t": "16:15", "e": "17:00", "l": "Masarykovo nám. 12"},
+        {"day": "zítra", "n": "Státní svátek", "all": True},
+        {"day": "zítra", "n": "Oběd s Michalem a dlouhý název události, který se nevejde", "t": "12:00", "e": "13:00"},
+        {"day": "zítra", "n": "Trénink", "t": "18:00", "e": "19:30"}], "more": 2}
+    build("agenda-workday", extras={"agenda": agenda}, view=View(panels=("agenda", "streams"), weather="compact",
+                                                                   widths=(("agenda", 2),)), cfg=StreamsConfig(mode="live"))
+    build("agenda-empty-today", extras={"agenda": {"ok": True, "today_empty": True, "stale": True, "as_of": "11:50",
+                                                    "items": [{"day": "zítra", "n": "Trénink", "t": "18:00", "e": "19:30"}]}},
+          view=View(panels=("agenda", "kick", "twitch")))
 
 
 if __name__ == "__main__":
