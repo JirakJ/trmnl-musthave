@@ -280,6 +280,7 @@ class Deployer:
         hard_deadline = started + MAX_ACK_WAIT_S
         offered = None
         since = activated_at - 1
+        first_offer: dict = {}   # zařízení → (čas, snímek) prvního nabídnutí po aktivaci
 
         def ts(value) -> float:
             try:
@@ -293,20 +294,24 @@ class Deployer:
             except (DeployError, ValueError):
                 status = {}
             for dev in status.get("devices") or []:
-                # Server renderuje průběžně, takže potvrzený snímek nemusí být ten nejnovější: rozhoduje snímek
-                # NABÍDNUTÝ po aktivaci (vyrenderovaný už novou verzí) a jeho X-Frame-Id v dalším dotazu.
-                offered_frame = dev.get("frame_offered")
-                if not offered_frame or ts(dev.get("frame_offered_at")) < since:
+                # Server renderuje průběžně a při každém kontaktu nabídne novější snímek, takže `frame_offered`
+                # se posouvá. Rozhoduje PRVNÍ nabídnutí po aktivaci (snímek nové verze): jakékoli potvrzení
+                # přes X-Frame-Id zaznamenané po něm potvrzuje snímek nabídnutý až po aktivaci.
+                offered_at = ts(dev.get("frame_offered_at"))
+                key = dev.get("id")
+                if dev.get("frame_offered") and offered_at >= since and key not in first_offer:
+                    first_offer[key] = (offered_at, dev.get("frame_offered"))
+                    # počkat do probuzení naplánovaného při tomto nabídnutí + tolerance (ukotveno, neposouvá se)
+                    wake = ts(dev.get("next_expected"))
+                    if wake:
+                        deadline = max(deadline, min(hard_deadline, wake + DEFAULT_ACK_TOLERANCE_S))
+                if key not in first_offer:
                     continue
-                offered = offered_frame
-                if (dev.get("frame_acknowledged") == offered_frame and ts(dev.get("frame_acknowledged_at")) >= since) \
-                        or (dev.get("frame_shown") == offered_frame and ts(dev.get("last_seen")) >= since):
-                    return {"state": "confirmed", "device": dev.get("id"), "frame": offered_frame,
-                            "acknowledged_at": dev.get("frame_acknowledged_at") or dev.get("last_seen")}
-                # snímek nabídnut: počkat do jeho naplánovaného probuzení + tolerance (ne déle než MAX_ACK_WAIT_S)
-                wake = ts(dev.get("next_expected"))
-                if wake:
-                    deadline = max(deadline, min(hard_deadline, wake + DEFAULT_ACK_TOLERANCE_S))
+                offered = first_offer[key][1]
+                acked_at = ts(dev.get("frame_acknowledged_at"))
+                if dev.get("frame_acknowledged") and acked_at > first_offer[key][0]:
+                    return {"state": "confirmed", "device": key, "frame": dev.get("frame_acknowledged"),
+                            "acknowledged_at": dev.get("frame_acknowledged_at")}
             if self.clock() >= deadline:
                 return {"state": "offered-unconfirmed" if offered else "not-contacted", "frame": offered or frame,
                         "waited_s": int(self.clock() - started)}
