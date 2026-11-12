@@ -38,7 +38,12 @@ def world(tmp_path):
             pass
 
         def do_GET(self):
-            body = json.dumps(state["status"]).encode() if self.path == "/status.json" else state["png"]
+            if self.path == "/status.json":
+                seq = state.get("seq")
+                current = (seq.pop(0) if len(seq) > 1 else seq[0]) if seq else state["status"]
+                body = json.dumps(current).encode()
+            else:
+                body = state["png"]
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -101,6 +106,22 @@ esac
     srv.shutdown()
 
 
+def offer_then_ack(offered, acked, newer=None):
+    """Sekvence /status.json: (1) zařízení dostalo `offered` po aktivaci, (2) další kontakt potvrdil `acked`
+    a dostal případně ještě novější snímek."""
+    from datetime import timedelta
+
+    t0 = datetime.now(timezone.utc) + timedelta(seconds=2)
+    t1 = t0 + timedelta(seconds=300)
+    first = {"frame_rendered": offered, "devices": [{"id": "AA", "frame_offered": offered, "frame_offered_at": t0.isoformat(),
+                                                    "frame_acknowledged": "old", "frame_acknowledged_at": None,
+                                                    "next_expected": None}]}
+    second = {"frame_rendered": newer or offered,
+              "devices": [{"id": "AA", "frame_offered": newer or offered, "frame_offered_at": t1.isoformat(),
+                           "frame_acknowledged": acked, "frame_acknowledged_at": t1.isoformat(), "next_expected": None}]}
+    return [first, first, second]
+
+
 def restarts(world):
     path = world["fake"] / "restarts"
     return len(path.read_text().splitlines()) if path.exists() else 0
@@ -138,11 +159,7 @@ def test_dry_run_changes_nothing(world):
 
 
 def test_successful_deploy_backs_up_activates_verifies_and_reports_confirmation(world):
-    now = datetime.now(timezone.utc)
-    world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_acknowledged": FRAME,
-                                            "frame_offered_at": now.isoformat(),
-                                            "frame_acknowledged_at": now.isoformat(), "frame_shown": FRAME,
-                                            "last_seen": now.isoformat(), "next_expected": now.isoformat()}]
+    world["state"]["seq"] = offer_then_ack(FRAME, FRAME)
     result = world["deployer"].deploy("v9.0.0")
     app = world["app"]
     assert result["result"] == "deployed" and result["device"]["state"] == "confirmed"
@@ -207,13 +224,10 @@ def test_missing_service_stops_before_any_change(world):
     assert (world["app"] / "musthave" / "__init__.py").read_text() == "OLD\n"
 
 
-def test_confirmation_tracks_the_offered_frame_even_when_newer_frames_were_rendered(world):
-    """Server renderuje každou minutu: zařízení potvrdí snímek nabídnutý po aktivaci, ne nutně ten nejnovější."""
-    now = datetime.now(timezone.utc)
-    world["state"]["status"]["frame_rendered"] = "musthave-frame-newer00000"
-    world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_offered_at": now.isoformat(),
-                                            "frame_acknowledged": FRAME, "frame_acknowledged_at": now.isoformat(),
-                                            "frame_shown": FRAME, "last_seen": now.isoformat(), "next_expected": None}]
+def test_confirmation_with_moving_offers_like_production(world):
+    """Server renderuje každou minutu a při každém kontaktu nabídne novější snímek (viz nasazení v1.7.1):
+    potvrzení = ACK zaznamenaný po prvním nabídnutí po aktivaci, i když nabídnutý snímek se mezitím posunul."""
+    world["state"]["seq"] = offer_then_ack(FRAME, FRAME, newer="musthave-frame-newer00000")
     result = world["deployer"].deploy("v9.0.0")
     assert result["device"]["state"] == "confirmed" and result["device"]["frame"] == FRAME
 

@@ -4,6 +4,11 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-12
+
+### Fixed
+- **deploy**: the device is offered a newer frame on every contact, so the offered frame moves and the 1.7.1 wait kept extending its deadline without ever matching. Confirmation now means any `X-Frame-Id` acknowledgement recorded after the *first* offer following the activation (that frame was rendered by the new version); the deadline is anchored to the wake-up scheduled at that first offer (+10 min, max 2 h). Found while deploying v1.7.1 to the Raspberry Pi.
+
 ## [1.7.1] - 2026-11-12
 
 ### Fixed
@@ -84,7 +89,8 @@ All ten backlog issues (#8–#17). Package version in `musthave.__version__`, sh
 - Legacy BYOS server (`/api/setup`, `/api/display`, `/api/log`, `/screens/<name>`) compatible with the stock TRMNL firmware.
 - Collector for weather (Open-Meteo), Kick and Twitch live status without developer applications; Liquid templates for the four TRMNL layouts; TRMNL cloud push (webhook or authenticated data endpoint).
 
-[Unreleased]: https://github.com/JirakJ/trmnl-musthave/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/JirakJ/trmnl-musthave/compare/v1.7.2...HEAD
+[1.7.2]: https://github.com/JirakJ/trmnl-musthave/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/JirakJ/trmnl-musthave/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/JirakJ/trmnl-musthave/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/JirakJ/trmnl-musthave/compare/v1.5.0...v1.6.0
