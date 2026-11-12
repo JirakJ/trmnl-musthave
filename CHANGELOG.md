@@ -6,6 +6,7 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ### Added
 - **status** (#8): `/status` and `/status.json` distinguish the rendered, offered and firmware-confirmed frame (confirmation = the next `X-Frame-Id`), store the last valid RSSI with its measurement time (documented % conversion), show last contact, battery estimate, firmware and the expected next contact from the interval the device actually received; `opožděné`/`neaktivní` only after `offline_tolerance_seconds`. Source freshness comes from the last successful fetch; stale sources show `data z HH:MM` on the screen.
+- **battery saving** (#11): optional quiet window (`quiet_start`/`quiet_end`, across midnight and DST, wake-up at its end) and low-battery mode with hysteresis (`low_battery_enter`/`low_battery_exit`) change the `refresh_rate` sent to the device; rule order OTA → forced `saving_mode` → power → low battery → quiet; `max_refresh_seconds` cap; `/status` and a short tag next to the battery explain the active mode. Defaults keep the previous behaviour; `config.toml` enables 00:00–06:00 and 20/25 %.
 
 ## [1.6.0] - 2026-10-18
 

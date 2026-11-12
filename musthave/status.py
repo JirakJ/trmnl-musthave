@@ -18,8 +18,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .policy import DeviceState, PolicyConfig, plausible_voltage
+from .policy import DeviceState, PolicyConfig, battery_percent, plausible_voltage
 
+SAVING_LABELS = {"none": "běžný", "quiet": "doba klidu", "low": "úspora baterie", "quiet+low": "doba klidu + úspora baterie"}
 RSSI_MIN, RSSI_MAX = -120, -1  # dBm; 0 a kladné hodnoty posílá firmware, když měření nemá
 
 
@@ -76,7 +77,6 @@ def _age_s(ts: float | None, now_ts: float) -> int | None:
 
 
 def device_summary(mac: str, state: DeviceState, now_ts: float, cfg: PolicyConfig, tz=None) -> dict[str, Any]:
-    from .payload import battery_percent
 
     voltage = plausible_voltage(state.voltage)
     confirmed = bool(state.acked_frame_id and state.acked_frame_id == state.target_frame_id)
@@ -102,6 +102,9 @@ def device_summary(mac: str, state: DeviceState, now_ts: float, cfg: PolicyConfi
         "frame_acknowledged": state.acked_frame_id,
         "frame_acknowledged_at": _iso(state.acked_at, tz),
         "offered_frame_confirmed": confirmed,
+        "saving": state.saving or "none",
+        "saving_reason": state.saving_reason,
+        "low_battery": bool(state.low_battery),
     }
 
 
@@ -184,6 +187,8 @@ def render_html(status: dict[str, Any]) -> str:
             f"<section><h2>{e(d['id'])} · {e(d['availability'])}</h2><table>"
             f"<tr><th>Poslední kontakt</th><td>{e(_short(d['last_seen']))} (před {e(_fmt_age(d['last_seen_age_s']))})</td></tr>"
             f"<tr><th>Očekávaný další kontakt</th><td>{e(_short(d['next_expected']))} (interval {e(d['refresh_rate_s'])} s)</td></tr>"
+            f"<tr><th>Režim intervalu</th><td>{e(SAVING_LABELS.get(d.get('saving') or 'none', d.get('saving')))}"
+            f" – {e(d.get('saving_reason'))}</td></tr>"
             f"<tr><th>Firmware</th><td>{e(d['firmware'])}</td></tr>"
             f"<tr><th>Baterie (odhad)</th><td>{batt}</td></tr>"
             f"<tr><th>Wi-Fi</th><td>{wifi}</td></tr>"

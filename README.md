@@ -128,6 +128,29 @@ full refresh against ghosting (`full_after_partials`, `full_every_minutes`, `nig
 `deploy/firmware/latest.bin` when `firmware_version.txt` differs from the device's version. Stock firmware keeps
 working against the same server (it always takes the `full` path). See `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Battery saving (night mode, low battery)
+
+Saving changes the `refresh_rate` the server sends to the device, so the device actually wakes up less often
+(skipping renders alone would not save anything). Settings live in `[server]`:
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `saving_mode` | `auto` | `auto`, `off` (never save) or a forced `quiet` / `low` |
+| `quiet_start`, `quiet_end` | empty (off) | quiet window in local time, may cross midnight (`"23:00"`–`"06:00"`) |
+| `interval_quiet` | 1800 | seconds between wake-ups in the quiet window |
+| `quiet_on_usb` | false | apply the quiet window on USB power too |
+| `low_battery_enter` / `low_battery_exit` | 0 (off) / enter + 5 | battery % thresholds with hysteresis |
+| `interval_low_battery` | 900 | seconds between wake-ups on low battery |
+| `max_refresh_seconds` | 3600 | upper bound of any `refresh_rate` sent to the device |
+
+Order of rules: OTA waiting (20 s) → forced `saving_mode` → power (USB does not save) → low battery → quiet window;
+when both apply the longer interval wins. The quiet window is computed in the configured timezone, so it works across
+midnight and DST changes, and the last wake-up in the window is scheduled for its end (never a whole extra quiet
+interval later). The low-battery state uses the last plausible voltage; an unknown or implausible reading keeps the
+previous state instead of pretending 0 %. Long intervals are aligned to the `align_minutes` slots. `/status` shows
+the active mode, its reason and the expected next contact; the full layout shows a short `noční režim` / `úspora`
+tag next to the battery.
+
 ## Status page (`/status`, `/status.json`)
 
 The BYOS server shows a readable overview at `http://<host>:<port>/status` (JSON at `/status.json`):

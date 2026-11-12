@@ -158,8 +158,9 @@ def make_server(
                     rects_area = area(rects) if rects else 0
 
             d = decide(state, state.frame_id, latest, rects_area, voltage, now, cfg)
-            if ota_wait:
-                d = Decision("none", d.full_mode, d.sleep_mode, 20)
+            state.low_battery = d.low_battery
+            if ota_wait:  # OTA čekání má přednost před všemi úspornými režimy
+                d = Decision("none", d.full_mode, d.sleep_mode, 20, "none", d.low_battery, "OTA čekání")
             elif d.action == "partial":
                 state.partials_since_full += 1
             elif d.action == "full":
@@ -169,6 +170,8 @@ def make_server(
                 state.target_frame_id = latest  # po překreslení bude na panelu; FrameStore ho nesmí vyřadit
                 state.offered_at = now_ts
             state.refresh_rate = d.refresh_rate
+            state.saving = d.saving if d.saving != "none" else None
+            state.saving_reason = d.reason or None
             state.next_expected_at = now_ts + d.refresh_rate
             if mac and self.headers.get("Access-Token") == API_KEY:  # jen zařízení spárované přes /api/setup
                 devices.save(mac, state)
@@ -187,8 +190,8 @@ def make_server(
                 "reset_firmware": False, "special_function": "none",
                 "ota_wait": ota_wait,
             }
-            log.info("display %s frame=%s → %s (batt %s, fw %s, %s/%ss)", mac, reported, d.action, raw_voltage, fw,
-                     d.sleep_mode, d.refresh_rate)
+            log.info("display %s frame=%s → %s (batt %s, fw %s, %s/%ss, saving %s)", mac, reported, d.action, raw_voltage,
+                     fw, d.sleep_mode, d.refresh_rate, d.saving)
             self._json(200, resp)
 
         def _frame_png(self, fid: str) -> None:
