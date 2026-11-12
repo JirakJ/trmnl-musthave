@@ -15,6 +15,7 @@ from .agenda import AgendaConfig
 from .alerts import AlertsConfig
 from .layout import LayoutConfig, LayoutError, parse_layout
 from .policy import PolicyConfig
+from .reminders import ReminderError, RemindersConfig, parse_reminders
 from .streams import MODES, StreamsConfig, parse_favorite
 
 KEYCHAIN_SERVICE = "trmnl-musthave"
@@ -83,6 +84,7 @@ class Settings:
     streams: StreamsConfig = StreamsConfig()  # [streams] mode / favorites / max_items / combined
     layout: LayoutConfig = LayoutConfig()     # [layout] panely, varianty, profily
     agenda: AgendaConfig = AgendaConfig()     # [agenda] – zdroje jen z config.local.toml / MUSTHAVE_ICS_URLS
+    reminders: RemindersConfig = RemindersConfig()  # [[reminder]], [[priority]], [reminders]
 
 
 class ConfigError(ValueError):
@@ -221,7 +223,15 @@ def load_settings(
         streams=(streams_cfg := parse_streams(streams)),
         layout=_parse_layout(raw.get("layout"), streams_cfg.combined),
         agenda=parse_agenda(raw.get("agenda", {}), merged.get("MUSTHAVE_ICS_URLS", "")),
+        reminders=_parse_reminders(raw),
     )
+
+
+def _parse_reminders(raw: dict) -> RemindersConfig:
+    try:
+        return parse_reminders(raw.get("reminder", []), raw.get("priority", []), raw.get("reminders", {}))
+    except (ReminderError, TypeError, ValueError) as err:
+        raise ConfigError(str(err)) from None
 
 
 def parse_agenda(raw: dict, env_sources: str = "") -> AgendaConfig:

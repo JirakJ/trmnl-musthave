@@ -73,6 +73,15 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
   .mh-agenda-time { flex: 0 0 58px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; padding: 1px 0; border: 1.5px solid #000; white-space: nowrap; }
   .mh-agenda-time--all { font-size: 11px; padding: 3px 0; }
   .mh-agenda-row--now .mh-agenda-time { background: #000; color: #fff; }
+  .mh-prio { display: flex; align-items: center; gap: 8px; padding: 3px 0; min-height: 26px; border-bottom: 1px solid #000; }
+  .mh-prio-n { flex: 0 0 20px; height: 20px; line-height: 20px; text-align: center; font-size: 13px; font-weight: 800; background: #000; color: #fff; border-radius: 10px; }
+  .mh-rem { display: flex; align-items: center; gap: 8px; padding: 2px 0; min-height: 24px; border-bottom: 1px solid #000; }
+  .mh-rem:last-child, .mh-prio:last-child { border-bottom: none; }
+  .mh-rem .mh-name { flex: 1 1 auto; font-weight: 600; font-size: 13px; }
+  .mh-rem-box { flex: 0 0 14px; width: 14px; height: 14px; line-height: 12px; text-align: center; font-size: 12px; font-weight: 800; border: 1.5px solid #000; box-sizing: border-box; }
+  .mh-rem--done .mh-name { text-decoration: line-through; font-weight: 400; }
+  .mh-rem-when { flex: 0 0 auto; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .mh-rem-when--today { background: #000; color: #fff; padding: 0 4px; }
   .mh-pf { flex: 0 0 auto; width: 16px; height: 16px; line-height: 14px; text-align: center; font-size: 11px; font-weight: 800; border: 1.5px solid #000; box-sizing: border-box; }
   .mh-empty { font-size: 14px; font-weight: 600; padding: 6px 0; flex-shrink: 0; }
   .mh-more { font-size: 12px; font-weight: 600; padding: 2px 0; flex-shrink: 0; }
@@ -211,6 +220,30 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
         </div>
         {% endfor %}
         {% if agenda.more %}<div class="mh-more">+{{ agenda.more }} dalších</div>{% endif %}
+        </div>
+      {% else %}
+        <span class="description">{{ panel.na }}</span>
+      {% endif %}
+      {% endif %}
+      {% if panel.key == "reminders" %}
+      <div class="mh-col-head">
+        <span class="title title--small">{{ panel.title }}</span>
+        <span class="label label--small">{{ date }}</span>
+      </div>
+      {% if reminders.ok %}
+        <div class="mh-list">
+        {% for prio in reminders.priorities %}
+        <div class="mh-prio"><span class="mh-prio-n">{{ forloop.index }}</span><span class="mh-name">{{ prio }}</span></div>
+        {% endfor %}
+        {% for rem in reminders.items %}
+        <div class="mh-rem{% if rem.done %} mh-rem--done{% endif %}">
+          <span class="mh-rem-box" aria-hidden="true">{% if rem.done %}x{% endif %}</span>
+          <span class="mh-name">{{ rem.n }}</span>
+          <span class="mh-rem-when{% if rem.today %} mh-rem-when--today{% endif %}">{{ rem.when }}</span>
+        </div>
+        {% endfor %}
+        {% if reminders.priorities.size == 0 and reminders.items.size == 0 %}<div class="mh-empty">Dnes nic naplánovaného</div>{% endif %}
+        {% if reminders.more %}<div class="mh-more">+{{ reminders.more }} dalších</div>{% endif %}
         </div>
       {% else %}
         <span class="description">{{ panel.na }}</span>
