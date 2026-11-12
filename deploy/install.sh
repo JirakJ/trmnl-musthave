@@ -6,6 +6,14 @@ set -euo pipefail
 HOST="${1:-rpi}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REMOTE_USER="$(ssh "$HOST" 'echo $USER')"
+
+# Na hostu s BYOS serverem se sběrač (timer) nesmí zapnout: server sám stahuje data a renderuje, timer by
+# posílal data do cloudu a soupeřil o stav. Aktualizaci serveru dělá deploy/deploy_server.py (záloha + ověření).
+if ssh "$HOST" "systemctl is-enabled 'trmnl-musthave-server@$REMOTE_USER.service' >/dev/null 2>&1" && [[ "${FORCE_COLLECTOR:-}" != "1" ]]; then
+  echo "✗ na $HOST běží BYOS server (trmnl-musthave-server@$REMOTE_USER); install.sh by zapnul sběrač přes timer." >&2
+  echo "  Server aktualizuj: deploy/deploy_server.py deploy <tag> --host $HOST   (vynutit sběrač: FORCE_COLLECTOR=1)" >&2
+  exit 1
+fi
 REMOTE_DIR="/home/$REMOTE_USER/trmnl-musthave"
 ENV_FILE="$ROOT/.env"
 
