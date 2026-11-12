@@ -212,6 +212,39 @@ použije svou cache nejvýš `max_age_hours` a panel ukáže `data z HH:MM`; sta
 nevydává (`Agenda nedostupná`, případně `část kalendářů nedostupná`, když selže jen část zdrojů). Ověřeno na
 reálném exportu z Google Kalendáře.
 
+## Denní priority a opakované připomínky
+
+Panel `reminders` (nadpis `DNES`, přidej ho do `[layout] panels`) ukazuje až tři priority pro dnešek a nejbližší
+připomínky. Nastavují se lokálně, nepotřebují žádný účet a jsou oddělené od lišty `[[countdown]]`:
+
+```toml
+[[priority]]
+text = "Dopsat nabídku"            # každý den; s date = 2026-11-12 jen ten den (zobrazí se max. 3)
+
+[[reminder]]
+name = "Vynést koš"
+weekly = ["út", "pá"]               # po út st čt pá so ne
+
+[[reminder]]
+name = "Zaplatit nájem"
+monthly = 31                        # den v měsíci
+short_month = "last"                # 29.–31. v kratším měsíci: "last" = poslední den (30. 4., 28./29. 2.), "skip" = nic
+lead_days = 3                       # ukázat 3 dny předem („za 3 dny“); 0 = jen v daný den
+
+[[reminder]]
+name = "Zubař"
+date = 2026-11-14                   # jednorázově
+
+[reminders]
+max_items = 5                       # nad limit „+N dalších“
+```
+
+Výskyt je vidět od `datum − lead_days` do konce svého dne a další den zmizí (nic se nepřenáší). Data jsou místní
+kalendářní data v `[location] timezone`. Pořadí: datum, pak pořadí v konfiguraci; splněné výskyty jdou na konec.
+Splnění se ukládá pro konkrétní výskyt (`state/done.json`, název + datum), takže příští týden je připomínka znovu
+otevřená: `python3 -m musthave done "Vynést koš" [--date 2026-11-12] [--undo]` (totéž nabízí lokální webová správa).
+Položky `[[reminder]]`/`[[priority]]` v `config.local.toml` se přidají k základnímu seznamu.
+
 ## Streamy: oblíbení, jen LIVE, společný seznam
 
 ```toml

@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 from musthave.config import Countdown  # noqa: E402
 from musthave.layout import View  # noqa: E402
 from musthave.payload import build_payload  # noqa: E402
+from musthave.reminders import parse_reminders, reminders_panel  # noqa: E402
 from musthave.streams import StreamsConfig  # noqa: E402
 from musthave.weather import hourly_slots, rain_summary  # noqa: E402
 
@@ -116,6 +117,26 @@ def main() -> None:
     build("agenda-empty-today", extras={"agenda": {"ok": True, "today_empty": True, "stale": True, "as_of": "11:50",
                                                     "items": [{"day": "zítra", "n": "Trénink", "t": "18:00", "e": "19:30"}]}},
           view=View(panels=("agenda", "kick", "twitch")))
+    # #16 priority a připomínky
+    rem = parse_reminders([{"name": "Vynést koš", "weekly": ["čt"]}, {"name": "Zaplatit nájem", "monthly": 15, "lead_days": 3},
+                           {"name": "Zubař", "date": date(2026, 11, 14), "lead_days": 2},
+                           {"name": "Zalít kytky", "weekly": ["po", "čt"]}, {"name": "Odečet plynu", "monthly": 31},
+                           {"name": "Narozeniny Petra – koupit dárek a přání", "date": date(2026, 11, 13), "lead_days": 1}],
+                          ["Dopsat nabídku pro T-Mobile", "Zavolat do banky", "Objednat STK"], {"max_items": 5})
+    view = View(panels=("reminders", "agenda"), weather="compact")
+    build("reminders-over-limit", extras={"reminders": reminders_panel(rem, NOW, {"Zalít kytky|2026-11-12": 1.0}),
+                                          "agenda": None}, view=View(panels=("reminders", "streams"), weather="compact"),
+          cfg=StreamsConfig(mode="live"))
+    empty = parse_reminders([{"name": "Koš", "weekly": "po"}], [], {})
+    build("reminders-empty-day", extras={"reminders": reminders_panel(empty, NOW)}, view=View(panels=("reminders", "kick", "twitch")))
+    month_start = datetime(2026, 12, 1, 8, 0, tzinfo=TZ)
+    build("reminders-month-start", now=month_start, w=weather(month_start),
+          extras={"reminders": reminders_panel(rem, month_start)}, view=view)
+    new_year = datetime(2026, 12, 30, 8, 0, tzinfo=TZ)
+    year_cfg = parse_reminders([{"name": "Silvestr – nákup", "date": date(2026, 12, 31), "lead_days": 3},
+                                {"name": "Daňové přiznání", "monthly": 1, "lead_days": 2}], ["Uzavřít rok"], {})
+    build("reminders-year-end", now=new_year, w=weather(new_year), extras={"reminders": reminders_panel(year_cfg, new_year)},
+          view=view)
 
 
 if __name__ == "__main__":

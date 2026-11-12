@@ -25,6 +25,7 @@ from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
 from .agenda import agenda_panel, fetch_agenda
 from .alerts import alert_strip, fetch_alerts
 from .layout import active_view
+from .reminders import DoneStore, reminders_panel
 from .weather import fetch_weather, with_fallback
 
 log = logging.getLogger("musthave")
@@ -83,7 +84,9 @@ def collect(http, settings: Settings, now: datetime, last_weather: dict | None =
         last_sources["layout"] = layout_state
     else:
         last_sources.pop("layout", None)
-    extras = {"agenda": agenda_panel(agenda_state, now, settings.agenda)}
+    extras = {"agenda": agenda_panel(agenda_state, now, settings.agenda),
+              "reminders": reminders_panel(settings.reminders, now,
+                                           DoneStore(settings.state_path.parent / "done.json").load())}
     if alerts_state is not None:
         extras["alert"] = alert_strip(alerts_state, now, settings.alerts)
     payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,

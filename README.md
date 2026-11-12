@@ -224,6 +224,39 @@ cached events for up to `max_age_hours` and the panel shows `data z HH:MM`; olde
 agenda (`Agenda nedostupná`, or `část kalendářů nedostupná` when only some feeds fail). Verified with a real Google
 Calendar export.
 
+## Daily priorities and recurring reminders
+
+A `reminders` panel (title `DNES`, add it to `[layout] panels`) shows up to three priorities for today and the
+nearest reminders. They are configured locally, need no account and are separate from the `[[countdown]]` strip:
+
+```toml
+[[priority]]
+text = "Dopsat nabídku"            # every day; with date = 2026-11-12 only on that day (max 3 shown)
+
+[[reminder]]
+name = "Vynést koš"
+weekly = ["út", "pá"]               # po út st čt pá so ne
+
+[[reminder]]
+name = "Zaplatit nájem"
+monthly = 31                        # day of month
+short_month = "last"                # 29–31 in a shorter month: "last" = last day (30 Apr, 28/29 Feb), "skip" = none
+lead_days = 3                       # show 3 days ahead ("za 3 dny"); 0 = only on the day
+
+[[reminder]]
+name = "Zubař"
+date = 2026-11-14                   # one-off
+
+[reminders]
+max_items = 5                       # +N more beyond that
+```
+
+An occurrence is visible from `date − lead_days` until the end of its day and disappears the next day (nothing is
+carried over). Dates are local calendar dates in `[location] timezone`. Order: date, then configuration order;
+completed occurrences move to the end. Completion is stored per occurrence (`state/done.json`, name + date), so next
+week's occurrence is open again: `python3 -m musthave done "Vynést koš" [--date 2026-11-12] [--undo]` (the local web
+admin offers the same). `[[reminder]]`/`[[priority]]` entries in `config.local.toml` are appended to the base list.
+
 ## Streams: favourites, LIVE-only, combined list
 
 ```toml

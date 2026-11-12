@@ -19,8 +19,9 @@ PANEL_TITLES = {
     "twitch": ("TWITCH", "Twitch nedostupný"),
     "streams": ("STREAMY", "Streamy nedostupné"),
     "agenda": ("AGENDA", "Agenda nedostupná"),
+    "reminders": ("DNES", "Připomínky nedostupné"),
 }
-NOT_CONFIGURED = {"agenda": "Kalendář není nastavený"}
+NOT_CONFIGURED = {"agenda": "Kalendář není nastavený", "reminders": "Připomínky nejsou nastavené"}
 WEATHER_VARIANTS =("full", "compact", "off")
 MAX_PANELS = 3
 DAYS = {"po": 0, "ut": 1, "út": 1, "st": 2, "ct": 3, "čt": 3, "pa": 4, "pá": 4, "so": 5, "ne": 6,
@@ -222,6 +223,8 @@ def is_empty(key: str, section: dict | None) -> bool:
         return False
     if key in ("kick", "twitch", "streams"):
         return int(section.get("live") or 0) == 0
+    if key == "reminders":
+        return not section.get("items") and not section.get("priorities")
     return not section.get("items")
 
 

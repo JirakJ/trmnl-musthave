@@ -1,0 +1,205 @@
+{
+ "updated": "08:00",
+ "location": "Jihlava",
+ "date": "Středa 30. 12. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 64,
+ "saving": null,
+ "weather": {
+  "ok": true,
+  "temp": 8.4,
+  "feels": 5.9,
+  "hum": 81,
+  "wind": 17,
+  "code": 61,
+  "label": "Déšť",
+  "days": [
+   {
+    "d": "Čt",
+    "hi": 9,
+    "lo": 3,
+    "p": 90,
+    "code": 61,
+    "label": "Déšť"
+   },
+   {
+    "d": "Pá",
+    "hi": 7,
+    "lo": 1,
+    "p": 20,
+    "code": 3,
+    "label": "Zataženo"
+   },
+   {
+    "d": "So",
+    "hi": 6,
+    "lo": -1,
+    "p": 5,
+    "code": 1,
+    "label": "Skoro jasno"
+   }
+  ],
+  "hours": [
+   {
+    "ts": 1798614000,
+    "h": "08",
+    "t": 8,
+    "p": 10,
+    "mm": 0.0
+   },
+   {
+    "ts": 1798617600,
+    "h": "09",
+    "t": 9,
+    "p": 60,
+    "mm": 1.2
+   },
+   {
+    "ts": 1798621200,
+    "h": "10",
+    "t": 9,
+    "p": 90,
+    "mm": 4.5
+   },
+   {
+    "ts": 1798624800,
+    "h": "11",
+    "t": 8,
+    "p": 85,
+    "mm": 2.1
+   },
+   {
+    "ts": 1798628400,
+    "h": "12",
+    "t": 7,
+    "p": 40,
+    "mm": 0.3
+   },
+   {
+    "ts": 1798632000,
+    "h": "13",
+    "t": 6,
+    "p": 10,
+    "mm": 0.0
+   }
+  ],
+  "rain": "Nejvyšší šance srážek 10⁠–⁠12 h (90 %) · 8,1 mm"
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1000,
+    "g": "Valheim",
+    "s": "12:02"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 900,
+    "g": "Valheim",
+    "s": "12:02"
+   },
+   {
+    "n": "Fattypillow",
+    "live": false
+   },
+   {
+    "n": "Czechfather",
+    "live": false
+   },
+   {
+    "n": "Czechcloud",
+    "live": false
+   }
+  ],
+  "live": 2
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Agraelus",
+    "live": true,
+    "v": 4300,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Artemis",
+    "live": true,
+    "v": 3600,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 800,
+    "g": "World of Warcraft",
+    "s": "12:02"
+   },
+   {
+    "n": "Arcadebulls",
+    "live": false
+   },
+   {
+    "n": "Cruelladk",
+    "live": false
+   },
+   {
+    "n": "Conducteir77",
+    "live": false
+   },
+   {
+    "n": "Oliverovykecy",
+    "live": false
+   }
+  ],
+  "live": 3
+ },
+ "countdowns": [
+  {
+   "n": "Vánoce",
+   "days": 359,
+   "label": "359 dní",
+   "d": "24. 12."
+  }
+ ],
+ "layout": {
+  "weather": "compact"
+ },
+ "reminders": {
+  "ok": true,
+  "priorities": [
+   "Uzavřít rok"
+  ],
+  "items": [
+   {
+    "n": "Silvestr – nákup",
+    "when": "zítra"
+   },
+   {
+    "n": "Daňové přiznání",
+    "when": "za 2 dny"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "key": "reminders",
+   "title": "DNES",
+   "na": "Připomínky nedostupné",
+   "w": 1
+  },
+  {
+   "key": "agenda",
+   "title": "AGENDA",
+   "na": "Kalendář není nastavený",
+   "w": 1
+  }
+ ]
+}

@@ -30,6 +30,28 @@ def status(root: Path) -> int:
     return 0
 
 
+def mark_done(root: Path, name: str, when: str | None, undo: bool = False) -> int:
+    from datetime import date, datetime
+    from zoneinfo import ZoneInfo
+
+    from .reminders import DoneStore, occurrence_key
+
+    settings = load_settings(root, secret_lookup=None)
+    now = datetime.now(ZoneInfo(settings.timezone))
+    known = {r.name for r in settings.reminders.reminders}
+    if name not in known:
+        print(f"neznámá připomínka {name!r}; známé: {', '.join(sorted(known)) or '—'}", file=sys.stderr)
+        return 2
+    try:
+        day = date.fromisoformat(when) if when else now.date()
+    except ValueError:
+        print("--date musí být YYYY-MM-DD", file=sys.stderr)
+        return 2
+    DoneStore(settings.state_path.parent / "done.json").set(occurrence_key(name, day), not undo, now)
+    print(f"{name} {day.isoformat()}: {'nesplněno' if undo else 'splněno'}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="musthave", description="TRMNL Must-have collector")
     sub = parser.add_subparsers(dest="cmd")
@@ -39,6 +61,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="vypsat zařízení z TRMNL účtu")
     ota_p = sub.add_parser("ota-mode", help="OTA čekací režim zařízení (on = polling 20 s bez kreslení, dokud nepřijde update)")
     ota_p.add_argument("state", choices=["on", "off", "status"])
+    done_p = sub.add_parser("done", help="označit výskyt připomínky jako splněný (jen ten den, ne celé opakování)")
+    done_p.add_argument("name", help="název připomínky z [[reminder]]")
+    done_p.add_argument("--date", default=None, help="datum výskytu YYYY-MM-DD (výchozí dnes)")
+    done_p.add_argument("--undo", action="store_true", help="zrušit označení")
     serve_p = sub.add_parser("serve", help="BYOS server: lokální render + HTTP pro zařízení")
     serve_p.add_argument("--port", type=int, default=None)
     serve_p.add_argument("--push", action="store_true", help="posílat data i do TRMNL cloudu (webhook)")
@@ -67,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
             flag.unlink(missing_ok=True)
         print("ota-mode:", "on" if flag.exists() else "off")
         return 0
+    if cmd == "done":
+        return mark_done(ROOT, args.name, args.date, args.undo)
     if cmd == "serve":
         from .serve import serve
 
