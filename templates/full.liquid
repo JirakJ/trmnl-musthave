@@ -101,7 +101,7 @@ Proměnné: updated, battery_percent (odhad 1–100 nebo nil), weather{ok,temp,f
         <span aria-hidden="true">{% if battery_percent != nil %}{{ battery_percent }} %{% else %}— %{% endif %}</span>{% if saving %}<span class="mh-saving">{{ saving }}</span>{% endif %}
       </span>
     </span>
-    <span class="mh-head-meta">{% if location %}{{ location }} · {% endif %}aktualizováno {{ updated }}{% if fw %} · FW {{ fw }}{% endif %}</span>
+    <span class="mh-head-meta">{% if location and location != "" %}{{ location }} · {% endif %}aktualizováno {{ updated }}{% if fw and fw != "" %} · FW {{ fw }}{% endif %}</span>
   </div>
 
   {% if alert and alert.hide != true %}

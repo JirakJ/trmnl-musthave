@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Callable, Mapping
 from zoneinfo import ZoneInfo
 
+from .admin import AdminApp, config_hash
 from .config import load_settings
 from .devices import LOCK as DEVICES_LOCK, DeviceRegistry
 from .frames import FrameStore, png_to_bitmap
@@ -76,6 +77,7 @@ def tick(
     push: bool = False,
 ) -> bool:
     """Jeden průchod: data → (TRMNL push) → render → FrameStore. Vrací True, když vznikl snímek."""
+    cfg_hash = config_hash(root)  # před načtením: snímek odráží nejvýš tuto verzi konfigurace
     settings = load_settings(root, env)
     http = http or Http()
     now = now or datetime.now(ZoneInfo(settings.timezone))
@@ -114,6 +116,13 @@ def tick(
         previous = None
     if previous == comparable and frames.latest() is not None:
         log.info("data unchanged, keeping frame %s", frames.latest())
+        meta = frames.dir / "render.json"
+        try:
+            info = json.loads(meta.read_text(encoding="utf-8"))
+        except (FileNotFoundError, ValueError):
+            info = {"frame_id": frames.latest(), "rendered_at": time.time()}
+        if info.get("config_hash") != cfg_hash:  # nová konfigurace dala stejný obsah → snímek ji už odráží
+            write_json_atomic(meta, {**info, "config_hash": cfg_hash})
         return True
 
     try:
@@ -132,18 +141,33 @@ def tick(
         log.error("storing frame failed, keeping last frame: %s", err)
         return False
     rendered_path.write_text(json.dumps(comparable, ensure_ascii=False), encoding="utf-8")
-    write_json_atomic(frames.dir / "render.json", {"frame_id": fid, "rendered_at": time.time()})
+    write_json_atomic(frames.dir / "render.json", {"frame_id": fid, "rendered_at": time.time(), "config_hash": cfg_hash})
     log.info("frame %s", fid)
     return True
+
+
+def render_preview(root: Path, http=None) -> bytes:
+    """Náhled pro správu: stejná cesta jako displej (collect → build_payload → Chromium → 1-bit PNG), ale stav ani
+    snímek se neukládají – zařízení náhled nedostane."""
+    settings = load_settings(root)
+    now = datetime.now(ZoneInfo(settings.timezone))
+    state = load_state(settings.state_path)
+    seen = DeviceRegistry(root / "state" / "devices.json").latest_seen()
+    col = collect(http or Http(), settings, now, state.last_weather, fw=(seen.fw_version or "") if seen else "",
+                  last_kick=state.last_kick, last_twitch=state.last_twitch,
+                  battery_voltage=seen.voltage if seen else None, saving=seen.saving if seen else None,
+                  max_bytes=None, last_sources=state.sources)
+    return render_screen(col.payload, settings.chrome, "png", headless=settings.headless)
 
 
 def serve(root: Path, port: int | None = None, push: bool = False, once: bool = False) -> int:
     settings = load_settings(root)
     frames = FrameStore(root / "state" / "frames")
     devices = DeviceRegistry(root / "state" / "devices.json")
+    clock = lambda: datetime.now(ZoneInfo(settings.timezone))  # noqa: E731
+    admin = AdminApp(root, devices, preview=render_preview, clock=clock)
     srv = make_server(frames, devices, settings.policy, port=port if port is not None else settings.server_port,
-                      firmware_dir=settings.firmware_dir,
-                      clock=lambda: datetime.now(ZoneInfo(settings.timezone)), root=root)
+                      firmware_dir=settings.firmware_dir, clock=clock, root=root, admin=admin)
     threading.Thread(target=srv.serve_forever, daemon=True, name="byos-http").start()
     interval = min(settings.policy.interval_usb, settings.policy.interval_battery)
     log.info("BYOS v1 server on port %d, render every %ds, push_to_trmnl=%s", srv.server_port, interval, push)
