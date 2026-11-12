@@ -140,6 +140,7 @@ def test_dry_run_changes_nothing(world):
 def test_successful_deploy_backs_up_activates_verifies_and_reports_confirmation(world):
     now = datetime.now(timezone.utc)
     world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_acknowledged": FRAME,
+                                            "frame_offered_at": now.isoformat(),
                                             "frame_acknowledged_at": now.isoformat(), "frame_shown": FRAME,
                                             "last_seen": now.isoformat(), "next_expected": now.isoformat()}]
     result = world["deployer"].deploy("v9.0.0")
@@ -179,6 +180,7 @@ def test_invalid_frame_rolls_back(world):
 
 def test_unconfirmed_device_is_reported_without_rollback(world):
     world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_acknowledged": "old",
+                                            "frame_offered_at": datetime.now(timezone.utc).isoformat(),
                                             "frame_acknowledged_at": None, "frame_shown": "old", "last_seen": None,
                                             "next_expected": None}]
     result = world["deployer"].deploy("v9.0.0", ack_timeout=0)
@@ -203,3 +205,23 @@ def test_missing_service_stops_before_any_change(world):
     with pytest.raises(DeployError, match="not installed"):
         world["deployer"].deploy("v9.0.0")
     assert (world["app"] / "musthave" / "__init__.py").read_text() == "OLD\n"
+
+
+def test_confirmation_tracks_the_offered_frame_even_when_newer_frames_were_rendered(world):
+    """Server renderuje každou minutu: zařízení potvrdí snímek nabídnutý po aktivaci, ne nutně ten nejnovější."""
+    now = datetime.now(timezone.utc)
+    world["state"]["status"]["frame_rendered"] = "musthave-frame-newer00000"
+    world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_offered_at": now.isoformat(),
+                                            "frame_acknowledged": FRAME, "frame_acknowledged_at": now.isoformat(),
+                                            "frame_shown": FRAME, "last_seen": now.isoformat(), "next_expected": None}]
+    result = world["deployer"].deploy("v9.0.0")
+    assert result["device"]["state"] == "confirmed" and result["device"]["frame"] == FRAME
+
+
+def test_frame_offered_before_activation_does_not_count(world):
+    old = "2020-01-01T00:00:00+00:00"
+    world["state"]["status"]["devices"] = [{"id": "AA", "frame_offered": FRAME, "frame_offered_at": old,
+                                            "frame_acknowledged": FRAME, "frame_acknowledged_at": old,
+                                            "frame_shown": FRAME, "last_seen": old, "next_expected": None}]
+    result = world["deployer"].deploy("v9.0.0", ack_timeout=0)
+    assert result["device"]["state"] == "not-contacted" and "nepotvrdilo" in result["summary"]
