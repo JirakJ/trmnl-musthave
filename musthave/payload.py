@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from .config import Countdown
-from .policy import plausible_voltage
+from .policy import battery_percent  # noqa: F401 – re-export (šablony, status)
 
 MAX_BYTES = 4500
 DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
@@ -17,6 +17,7 @@ DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota
 GAME_MAX = 22
 GAME_MIN = 12
 NAME_MAX = 18  # název události v odpočtu
+SAVING_NOTES = {"quiet": "noční režim", "low": "úspora", "quiet+low": "noc · úspora"}  # krátký údaj u baterie
 
 
 class PayloadTooLarge(Exception):
@@ -25,24 +26,6 @@ class PayloadTooLarge(Exception):
 
 def czech_date(now: datetime) -> str:
     return f"{DAYS_CS_LONG[now.weekday()]} {now.day}. {now.month}. {now.year}"
-
-
-def battery_percent(voltage: float | None) -> int | None:
-    """Odhad pro TRMNL OG podle https://help.trmnl.com/en/articles/10556850-device-battery-faq.
-
-    Chybějící/neplatné měření není prázdná baterie. Horní pásma odpovídají odhadu v TRMNL účtu.
-    """
-    voltage = plausible_voltage(voltage)
-    if voltage is None:
-        return None
-    percent = round((voltage - 3.0) / 0.012, 2)
-    if percent >= 88:
-        return 100
-    if percent >= 85:
-        return 95
-    if percent >= 83:
-        return 90
-    return round(percent) if percent >= 10 else 1
 
 
 def days_label(days: int) -> str:
@@ -124,6 +107,7 @@ def build_payload(
     weather: dict, kick: dict, twitch: dict, now: datetime, host: str = "", fw: str = "",
     countdowns: Iterable[Countdown] = (),
     battery_voltage: float | None = None,
+    saving: str | None = None,
 ) -> dict:
     for game_max in (GAME_MAX, GAME_MIN):
         payload = {
@@ -132,6 +116,7 @@ def build_payload(
             "host": host,
             "fw": fw,
             "battery_percent": battery_percent(battery_voltage),
+            "saving": SAVING_NOTES.get(saving or ""),
             "weather": _stale_marks(copy.deepcopy(weather), weather, now),
             "kick": _section(kick, game_max, now),
             "twitch": _section(twitch, game_max, now),

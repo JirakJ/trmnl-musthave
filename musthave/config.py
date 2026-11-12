@@ -77,6 +77,30 @@ class Settings:
     countdowns: tuple[Countdown, ...] = ()  # [[countdown]] – odpočty dnů do událostí
 
 
+class ConfigError(ValueError):
+    """Neplatná hodnota v config.toml / config.local.toml (srozumitelná zpráva s názvem klíče)."""
+
+
+def _choice(value, allowed: tuple[str, ...], key: str) -> str:
+    text = str(value).strip().lower()
+    if text not in allowed:
+        raise ConfigError(f"{key}: neplatná hodnota {value!r}, povolené: {', '.join(allowed)}")
+    return text
+
+
+def _time_or_empty(value, key: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        hour, minute = (int(p) for p in text.split(":"))
+        if not (0 <= hour < 24 and 0 <= minute < 60):
+            raise ValueError
+    except ValueError:
+        raise ConfigError(f"{key}: čas musí být HH:MM, je {value!r}") from None
+    return f"{hour:02d}:{minute:02d}"
+
+
 def read_dotenv(path: Path) -> dict[str, str]:
     """Minimalistický parser KEY=VALUE řádků; komentáře a prázdné řádky ignoruje."""
     values: dict[str, str] = {}
@@ -168,6 +192,15 @@ def load_settings(
             align_minutes=int(server.get("align_minutes", 5)),
             align_lead_s=int(server.get("align_lead_seconds", 10)),
             offline_tolerance_s=int(server.get("offline_tolerance_seconds", 600)),
+            saving_mode=_choice(server.get("saving_mode", "auto"), ("auto", "off", "quiet", "low"), "saving_mode"),
+            quiet_start=_time_or_empty(server.get("quiet_start", ""), "quiet_start"),
+            quiet_end=_time_or_empty(server.get("quiet_end", ""), "quiet_end"),
+            interval_quiet=int(server.get("interval_quiet", 1800)),
+            quiet_on_usb=bool(server.get("quiet_on_usb", False)),
+            low_battery_enter=int(server.get("low_battery_enter", 0)),
+            low_battery_exit=int(server.get("low_battery_exit", 0)),
+            interval_low_battery=int(server.get("interval_low_battery", 900)),
+            max_refresh_s=int(server.get("max_refresh_seconds", 3600)),
         ),
         firmware_dir=root / "deploy" / "firmware",
         label=str(server.get("label", "")),

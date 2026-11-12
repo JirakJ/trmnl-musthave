@@ -117,6 +117,28 @@ USB, deep na baterii, podle hlášeného napětí), `refresh_rate`, kdy udělat 
 `firmware_version.txt` liší od verze zařízení. Stock firmware proti stejnému serveru dál funguje (jde vždy cestou `full`).
 Detaily: `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Úspora baterie (noční režim, nízké nabití)
+
+Úspora mění `refresh_rate`, který server posílá zařízení – zařízení se tedy skutečně budí méně často (samotné
+vynechání renderu by nic neušetřilo). Nastavení v `[server]`:
+
+| Klíč | Výchozí | Význam |
+| --- | --- | --- |
+| `saving_mode` | `auto` | `auto`, `off` (nikdy nešetřit) nebo vynucený `quiet` / `low` |
+| `quiet_start`, `quiet_end` | prázdné (vypnuto) | doba klidu v místním čase, může přes půlnoc (`"23:00"`–`"06:00"`) |
+| `interval_quiet` | 1800 | sekundy mezi probuzeními v době klidu |
+| `quiet_on_usb` | false | doba klidu i při napájení z USB |
+| `low_battery_enter` / `low_battery_exit` | 0 (vypnuto) / enter + 5 | prahy v % s hysterezí |
+| `interval_low_battery` | 900 | sekundy mezi probuzeními při nízké baterii |
+| `max_refresh_seconds` | 3600 | strop každého `refresh_rate` posílaného zařízení |
+
+Pořadí pravidel: OTA čekání (20 s) → vynucený `saving_mode` → napájení (USB nešetří) → nízká baterie → doba klidu;
+platí-li obojí, vyhrává delší interval. Doba klidu se počítá v nastavené časové zóně (funguje přes půlnoc i změnu
+času) a poslední probuzení v okně je naplánované na jeho konec, ne o celý další interval později. Stav nízké baterie
+vychází z posledního věrohodného napětí; neznámé nebo nevěrohodné měření ponechá předchozí stav (žádných falešných
+0 %). Dlouhé intervaly se zarovnávají na sloty `align_minutes`. `/status` ukazuje aktivní režim, jeho důvod
+a očekávaný další kontakt; full layout má u baterie krátký štítek `noční režim` / `úspora`.
+
 ## Stránka stavu (`/status`, `/status.json`)
 
 BYOS server ukazuje čitelný přehled na `http://<host>:<port>/status` (JSON na `/status.json`):

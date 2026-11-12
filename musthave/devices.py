@@ -32,8 +32,9 @@ class DeviceRegistry:
     def get(self, mac: str) -> DeviceState:
         with LOCK:
             raw = self._data.get(mac) or {}
-        values = {k: raw.get(k) for k in _FIELDS if k != "partials_since_full"}
-        return DeviceState(**values, partials_since_full=int(raw.get("partials_since_full") or 0))
+        values = {k: raw.get(k) for k in _FIELDS if k not in ("partials_since_full", "low_battery")}
+        return DeviceState(**values, partials_since_full=int(raw.get("partials_since_full") or 0),
+                           low_battery=bool(raw.get("low_battery")))
 
     def save(self, mac: str, state: DeviceState) -> None:
         with LOCK:
