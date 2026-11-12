@@ -4,6 +4,9 @@ All notable changes to the trmnl-musthave server. Format: Keep a Changelog, vers
 
 ## [Unreleased]
 
+### Added
+- **status** (#8): `/status` and `/status.json` distinguish the rendered, offered and firmware-confirmed frame (confirmation = the next `X-Frame-Id`), store the last valid RSSI with its measurement time (documented % conversion), show last contact, battery estimate, firmware and the expected next contact from the interval the device actually received; `opožděné`/`neaktivní` only after `offline_tolerance_seconds`. Source freshness comes from the last successful fetch; stale sources show `data z HH:MM` on the screen.
+
 ## [1.6.0] - 2026-10-18
 
 ### Added

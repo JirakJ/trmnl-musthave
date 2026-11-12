@@ -160,3 +160,17 @@ def test_section_keeps_stale_and_fallback_flags():
     p = build_payload(WEATHER, kick, twitch, datetime(2026, 9, 18))
     assert p["kick"]["stale"] is True and "stale" not in p["twitch"]
     assert p["twitch"]["fallback"] is True and "fallback" not in p["kick"]
+
+
+def test_stale_sources_show_time_of_last_successful_fetch_not_render_time():
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo("Europe/Prague")
+    now = datetime(2026, 11, 12, 21, 30, tzinfo=tz)
+    since = datetime(2026, 11, 12, 21, 5, tzinfo=tz).timestamp()
+    old = datetime(2026, 11, 11, 23, 50, tzinfo=tz).timestamp()
+    kick = {"ok": True, "items": [], "stale": True, "since": since}
+    weather = {**WEATHER, "stale": True, "since": old}
+    p = build_payload(weather, kick, {"ok": True, "items": []}, now)
+    assert p["kick"]["as_of"] == "21:05" and "since" not in p["kick"]
+    assert p["weather"]["as_of"] == "11. 11. 23:50" and "since" not in p["weather"]
+    assert "as_of" not in p["twitch"] and p["updated"] == "21:30"

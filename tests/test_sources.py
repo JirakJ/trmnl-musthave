@@ -11,7 +11,7 @@ def test_fresh_data_is_returned_and_remembered():
 
 def test_failure_uses_recent_last_good_marked_stale():
     shown, remembered = with_last_good("kick", {"ok": False, "items": []}, {"ts": 1000.0, "data": KICK}, 1000.0 + 600)
-    assert shown == {**KICK, "stale": True} and remembered == {"ts": 1000.0, "data": KICK}
+    assert shown == {**KICK, "stale": True, "since": 1000.0} and remembered == {"ts": 1000.0, "data": KICK}
 
 
 def test_failure_with_too_old_last_good_stays_not_ok():

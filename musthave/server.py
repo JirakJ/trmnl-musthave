@@ -21,6 +21,7 @@ from .diff import area, dirty_tiles, encode_regions, merge_rects
 from .frames import FrameStore
 from .devices import LOCK as DEVICES_LOCK
 from .policy import Decision, DeviceState, PolicyConfig, decide, plausible_voltage
+from .status import build_status, render_html, valid_rssi
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ def make_server(
     host: str = "0.0.0.0",
     firmware_dir: Path | None = None,
     clock: Callable[[], datetime] | None = None,
+    root: Path | None = None,
 ) -> ThreadingHTTPServer:
     now_fn = clock or datetime.now
     fw_dir = Path(firmware_dir) if firmware_dir else None
@@ -108,7 +110,18 @@ def make_server(
             now = now_fn()
             state = devices.get(mac) if mac else DeviceState()
             state.frame_id = reported if reported and frames.get(reported) is not None else None
-            state.last_seen_at = now.timestamp()
+            now_ts = now.timestamp()
+            if state.first_seen_at is None:
+                state.first_seen_at = now_ts
+            state.last_seen_at = now_ts
+            # Potvrzení: zařízení v dalším dotazu hlásí snímek, který jsme mu nabídli (ne pouhé odeslání odpovědi).
+            if reported and reported == state.target_frame_id and state.acked_frame_id != reported:
+                state.acked_frame_id = reported
+                state.acked_at = now_ts
+            rssi = valid_rssi(self.headers.get("RSSI"))
+            if rssi is not None:  # neplatné/chybějící RSSI nepřepíše poslední platné měření
+                state.rssi = rssi
+                state.rssi_at = now_ts
             if fw:
                 state.fw_version = fw
             # Nevěrohodné napětí (mimo 3–5.5 V, NaN; např. poloviční čtení ADC) politika nevidí (→ baterie,
@@ -122,6 +135,7 @@ def make_server(
             else:
                 implausible_seen.discard(mac)
                 state.voltage = voltage
+                state.voltage_at = now_ts
             latest = frames.latest()
 
             target_version = firmware_version()
@@ -153,6 +167,9 @@ def make_server(
                 state.last_full_at = now.timestamp()
             if d.action != "none":
                 state.target_frame_id = latest  # po překreslení bude na panelu; FrameStore ho nesmí vyřadit
+                state.offered_at = now_ts
+            state.refresh_rate = d.refresh_rate
+            state.next_expected_at = now_ts + d.refresh_rate
             if mac and self.headers.get("Access-Token") == API_KEY:  # jen zařízení spárované přes /api/setup
                 devices.save(mac, state)
 
@@ -203,12 +220,14 @@ def make_server(
                 return
             self._send(200, path.read_bytes(), "application/octet-stream")
 
+        def _status(self) -> dict:
+            now = now_fn()
+            with DEVICES_LOCK:
+                return build_status(frames, devices, cfg, now.timestamp(), root=root,
+                                    firmware_version=firmware_version(), tz=now.tzinfo)
+
         def _status_page(self) -> None:
-            latest = frames.latest()
-            body = (f"<h1>TRMNL Must-have BYOS v1</h1><p>latest: {latest or 'none'}</p>"
-                    f"<p>firmware: {firmware_version() or '-'}</p>"
-                    + (f'<img src="/frames/{latest}.png">' if latest else "")).encode()
-            self._send(200, body, "text/html; charset=utf-8")
+            self._send(200, render_html(self._status()).encode("utf-8"), "text/html; charset=utf-8")
 
         def do_GET(self) -> None:
             url = urlparse(self.path)
@@ -229,6 +248,8 @@ def make_server(
                 self._firmware()
             elif path in ("/", "/status"):
                 self._status_page()
+            elif path == "/status.json":
+                self._json(200, self._status())
             else:
                 self.send_error(404)
 

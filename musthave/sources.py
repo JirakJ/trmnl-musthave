@@ -19,7 +19,8 @@ def with_last_good(name: str, fresh: dict, last: dict | None, now_ts: float) -> 
         return fresh, {"ts": now_ts, "data": fresh}
     max_age = STALE_MAX_S[name]
     if last and last.get("data", {}).get("ok") and now_ts - float(last.get("ts", 0)) <= max_age:
-        return {**last["data"], "stale": True}, last
+        # since = čas posledního úspěšného získání; obrazovka ukáže „data z HH:MM“, ne čas renderu
+        return {**last["data"], "stale": True, "since": float(last.get("ts", 0))}, last
     return fresh, last
 
 
