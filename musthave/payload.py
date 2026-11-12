@@ -9,6 +9,7 @@ from datetime import datetime
 
 from .config import Countdown
 from .policy import battery_percent  # noqa: F401 – re-export (šablony, status)
+from .streams import StreamsConfig, build_section
 
 MAX_BYTES = 4500
 DAYS_CS_LONG = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
@@ -88,19 +89,31 @@ def _stale_marks(out: dict, source: dict, now: datetime) -> dict:
     return out
 
 
-def _section(source: dict, game_max: int, now: datetime | None = None) -> dict:
-    items = [dict(i) for i in sort_items(source.get("items", []))]
-    for i in items:
-        if "g" in i:
-            i["g"] = _truncate(i["g"], game_max)
-    out = {"ok": bool(source.get("ok")), "items": items, "live": sum(1 for i in items if i.get("live"))}
-    if source.get("fallback"):  # fallback = decapi místo GQL
-        out["fallback"] = True
-    if source.get("stale"):  # stale = poslední dobrá data po výpadku
+def _section(sources: list[tuple[str, dict]], game_max: int, now: datetime | None = None,
+             cfg: StreamsConfig | None = None) -> dict:
+    """Sekce streamů (jedna platforma nebo společný seznam), viz streams.build_section."""
+    cfg = cfg or StreamsConfig()
+    out = build_section(sources, cfg, game_max)
+    if out.get("mode") == "all":
+        out.pop("mode")
+    if not out["ok"]:
+        out = {"ok": False, "items": [], "live": 0}
+    stale = [src for _, src in sources if src.get("ok") and src.get("stale")]
+    if stale:  # stale = poslední dobrá data po výpadku; čas = nejstarší z nich
         out["stale"] = True
         if now is not None:
-            _stale_marks(out, source, now)
+            stamp = as_of(min(float(s.get("since") or 0) for s in stale) or None, now)
+            if stamp:
+                out["as_of"] = stamp
     return out
+
+
+def stream_panels(cfg: StreamsConfig) -> list[dict]:
+    """Výchozí sloupce streamů: dva (Kick, Twitch) nebo jeden společný seznam."""
+    if cfg.combined:
+        return [{"key": "streams", "title": "STREAMY", "na": "Streamy nedostupné"}]
+    return [{"key": "kick", "title": "KICK", "na": "Kick nedostupný"},
+            {"key": "twitch", "title": "TWITCH", "na": "Twitch nedostupný"}]
 
 
 def build_payload(
@@ -111,6 +124,7 @@ def build_payload(
     max_bytes: int | None = MAX_BYTES,
     location: str = "",
     extras: dict | None = None,
+    streams_cfg: StreamsConfig | None = None,
 ) -> dict:
     """Payload pro šablony. `max_bytes` = limit TRMNL cloudu (zkrátí/odebere volitelná data, viz fit_for_cloud);
     None = lokální BYOS render bez limitu. `extras` = volitelné panely (alert, agenda, …), None hodnoty se vynechají."""
@@ -123,10 +137,13 @@ def build_payload(
         "battery_percent": battery_percent(battery_voltage),
         "saving": SAVING_NOTES.get(saving or ""),
         "weather": _weather(weather, now),
-        "kick": _section(kick, GAME_MAX, now),
-        "twitch": _section(twitch, GAME_MAX, now),
+        "kick": _section([("kick", kick)], GAME_MAX, now, streams_cfg),
+        "twitch": _section([("twitch", twitch)], GAME_MAX, now, streams_cfg),
         "countdowns": countdown_items(countdowns, now),
+        "panels": stream_panels(streams_cfg or StreamsConfig()),
     }
+    if streams_cfg and streams_cfg.combined:
+        payload["streams"] = _section([("kick", kick), ("twitch", twitch)], GAME_MAX, now, streams_cfg)
     payload.update({k: v for k, v in (extras or {}).items() if v is not None})
     return payload if max_bytes is None else fit_for_cloud(payload, max_bytes)
 
@@ -157,7 +174,7 @@ def fit_for_cloud(payload: dict, max_bytes: int = MAX_BYTES) -> dict:
     if len(encode(payload)) <= max_bytes:
         return payload
     out = copy.deepcopy(payload)
-    for key in ("kick", "twitch"):
+    for key in ("kick", "twitch", "streams"):
         for item in (out.get(key) or {}).get("items", []):
             if "g" in item:
                 item["g"] = _truncate(item["g"], GAME_MIN)

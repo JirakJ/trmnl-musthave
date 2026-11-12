@@ -135,6 +135,25 @@ Pod aktuálním počasím full layout ukazuje šest hodinových oken od aktuáln
 
 Náhledy: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, render přes `preview/shot.py`.
 
+## Streamy: oblíbení, jen LIVE, společný seznam
+
+```toml
+[streams]
+kick = ["fattypillow", "czechfather"]
+twitch = ["agraelus", "rob2628"]
+mode = "all"                 # all (výchozí, jako dřív) | live | live_summary (živé + řádek „offline: …“)
+favorites = ["twitch:agraelus", "kick:fattypillow"]   # identita = platforma:slug/login, nikdy zobrazované jméno
+max_items = 0                # na seznam, 0 = bez limitu; skryté jako „+N dalších“
+combined = false             # jeden seznam přes Kick i Twitch se štítkem K/T
+```
+
+Stabilní řazení: živí oblíbení (v pořadí `favorites`) → ostatní živí podle diváků, při shodě podle platformy a id →
+offline oblíbení → ostatní offline v pořadí konfigurace. Limit se uplatní po seřazení, živí mají přednost. Režim `live`
+ukáže `Nikdo nevysílá`, když nikdo nevysílá; výpadek zdroje zůstává `Kick nedostupný` (nikdy „nikdo nevysílá“). Když
+selže dotaz na jeden kanál, zůstane jeho poslední známý stav (≤ 30 min od skutečného získání) místo falešného přechodu
+do offline; bez historie se ukáže `jméno ?`. Společný seznam zachová kategorii, diváky i čas začátku a přizná platformu
+bez dat (`bez Kick`). Náhledy: `preview/scenarios/streams-*.json`.
+
 ## Výstrahy ČHMÚ
 
 Volitelný pruh pod hlavičkou ukazuje nejzávažnější platnou nebo blížící se výstrahu ČHMÚ pro nastavenou oblast:

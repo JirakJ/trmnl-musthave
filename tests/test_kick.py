@@ -27,12 +27,12 @@ def test_live_channel_has_viewers_game_and_local_start_time():
     out = fetch_kick(FakeHttp({"astatoro": LIVE}), ["astatoro"])
     assert out["ok"] is True
     item = out["items"][0]
-    assert item == {"n": "Astatoro", "live": True, "v": 1394, "g": "Valheim", "s": "14:17"}
+    assert item == {"id": "astatoro", "n": "Astatoro", "live": True, "v": 1394, "g": "Valheim", "s": "14:17"}
 
 
 def test_offline_channel_is_minimal():
     out = fetch_kick(FakeHttp({"fattypillow": OFFLINE}), ["fattypillow"])
-    assert out["items"][0] == {"n": "FATTYPILLOW", "live": False}
+    assert out["items"][0] == {"id": "fattypillow", "n": "FATTYPILLOW", "live": False}
 
 
 def test_result_order_follows_configuration():
@@ -45,7 +45,7 @@ def test_single_failure_marks_item_but_keeps_ok():
     http = FakeHttp({"astatoro": LIVE, "broken": OSError("timeout")})
     out = fetch_kick(http, ["astatoro", "broken"])
     assert out["ok"] is True
-    assert out["items"][1] == {"n": "broken", "live": False, "err": True}
+    assert out["items"][1] == {"id": "broken", "n": "broken", "live": False, "err": True}
 
 
 def test_all_failures_return_not_ok():

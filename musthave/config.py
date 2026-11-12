@@ -13,6 +13,7 @@ from typing import Callable, Mapping
 
 from .alerts import AlertsConfig
 from .policy import PolicyConfig
+from .streams import MODES, StreamsConfig, parse_favorite
 
 KEYCHAIN_SERVICE = "trmnl-musthave"
 SECRET_NAMES = ("TRMNL_WEBHOOK_UUID", "TRMNL_USER_API_KEY")
@@ -77,6 +78,7 @@ class Settings:
     headless: str = "auto"  # auto | new | old – režim headless Chromia (RPi s Chromium 126 potřebuje old)
     countdowns: tuple[Countdown, ...] = ()  # [[countdown]] – odpočty dnů do událostí
     alerts: AlertsConfig = AlertsConfig()   # [alerts] – výstrahy ČHMÚ (vypnuto, dokud není nastavena oblast)
+    streams: StreamsConfig = StreamsConfig()  # [streams] mode / favorites / max_items / combined
 
 
 class ConfigError(ValueError):
@@ -209,7 +211,24 @@ def load_settings(
         headless=str(server.get("headless", "auto")),
         countdowns=parse_countdowns(raw.get("countdown", [])),
         alerts=parse_alerts(raw.get("alerts", {})),
+        streams=parse_streams(streams),
     )
+
+
+def parse_streams(raw: dict) -> StreamsConfig:
+    mode = _choice(raw.get("mode", "all"), MODES, "[streams] mode")
+    favorites = []
+    for entry in raw.get("favorites", []):
+        try:
+            key = parse_favorite(entry)
+        except ValueError as err:
+            raise ConfigError(f"[streams] {err}") from None
+        if key not in favorites:
+            favorites.append(key)
+    max_items = int(raw.get("max_items", 0))
+    if max_items < 0:
+        raise ConfigError("[streams] max_items musí být ≥ 0")
+    return StreamsConfig(mode=mode, favorites=tuple(favorites), max_items=max_items, combined=bool(raw.get("combined", False)))
 
 
 def parse_alerts(raw: dict) -> AlertsConfig:

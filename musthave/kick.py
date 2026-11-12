@@ -27,8 +27,8 @@ def parse_channel(slug: str, data: dict) -> dict:
     name = (data.get("user") or {}).get("username") or slug
     live = data.get("livestream")
     if not live:
-        return {"n": name, "live": False}
-    item = {"n": name, "live": True, "v": int(live.get("viewer_count") or 0)}
+        return {"id": slug, "n": name, "live": False}
+    item = {"id": slug, "n": name, "live": True, "v": int(live.get("viewer_count") or 0)}
     categories = live.get("categories") or []
     if categories and categories[0].get("name"):
         item["g"] = categories[0]["name"]
@@ -47,7 +47,7 @@ def fetch_kick(http, slugs: list[str]) -> dict:
             return parse_channel(slug, http.get_json(CHANNEL_URL.format(slug=slug), HEADERS))
         except Exception as err:  # noqa: BLE001
             log.warning("kick %s failed: %s", slug, err)
-            return {"n": slug, "live": False, "err": True}
+            return {"id": slug, "n": slug, "live": False, "err": True}
 
     with ThreadPoolExecutor(max_workers=min(5, len(slugs))) as pool:
         items = list(pool.map(one, slugs))
