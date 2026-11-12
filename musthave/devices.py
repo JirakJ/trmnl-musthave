@@ -43,6 +43,11 @@ class DeviceRegistry:
             tmp.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
             os.replace(tmp, self.path)
 
+    def items(self) -> list[tuple[str, DeviceState]]:
+        with LOCK:
+            macs = list(self._data)
+        return [(mac, self.get(mac)) for mac in macs]
+
     def states(self) -> list[DeviceState]:
         with LOCK:
             macs = list(self._data)

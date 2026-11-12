@@ -128,6 +128,25 @@ full refresh against ghosting (`full_after_partials`, `full_every_minutes`, `nig
 `deploy/firmware/latest.bin` when `firmware_version.txt` differs from the device's version. Stock firmware keeps
 working against the same server (it always takes the `full` path). See `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Status page (`/status`, `/status.json`)
+
+The BYOS server shows a readable overview at `http://<host>:<port>/status` (JSON at `/status.json`):
+
+- **frames**: the last *rendered* frame (render loop), the frame *offered* to each device (sent in a `partial`/`full`
+  answer) and the frame *confirmed* by the firmware. A frame counts as confirmed only when the device's next request
+  carries it in `X-Frame-Id`; a sent response is not a confirmation. Stock firmware sends no `X-Frame-Id`, so its
+  frames always stay unconfirmed.
+- **device**: last contact, the interval it was actually given (`refresh_rate`) and the expected next contact,
+  firmware, battery estimate and Wi-Fi. A device is `opožděné` (late) after the expected wake-up and `neaktivní`
+  (inactive) only after `[server] offline_tolerance_seconds` (default 600) more, so deep sleep is never an outage.
+- **Wi-Fi**: the last valid `RSSI` header (−120…−1 dBm) and when it was measured; missing or invalid values keep the
+  previous measurement, without any measurement the state is `neznámý`. Percent = `2 × (RSSI + 100)` clamped to
+  0–100 (−100 dBm = 0 %, −50 dBm or better = 100 %).
+- **data freshness**: the time of the last *successful* fetch of each source, independent of the render time.
+  When a source runs on its last good data, the screen shows `data z HH:MM` (the fetch time) instead of the render time.
+
+The status is server-side only; the frozen e-ink frame never claims the display is online or offline.
+
 ## Deploying to a Raspberry Pi
 
 ```

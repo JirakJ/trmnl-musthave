@@ -18,6 +18,15 @@ class DeviceState:
     last_seen_at: float | None = None
     fw_version: str | None = None
     voltage: float | None = None         # poslední věrohodné napětí baterie (V)
+    voltage_at: float | None = None      # kdy bylo `voltage` změřeno
+    rssi: int | None = None              # poslední platné RSSI Wi-Fi (dBm, hlavička RSSI)
+    rssi_at: float | None = None         # kdy bylo `rssi` změřeno
+    first_seen_at: float | None = None
+    offered_at: float | None = None      # kdy server naposledy nabídl `target_frame_id` (action partial/full)
+    acked_frame_id: str | None = None    # snímek potvrzený firmwarem: další dotaz nesl X-Frame-Id == nabídnutý
+    acked_at: float | None = None
+    refresh_rate: int | None = None      # interval, který zařízení naposledy dostalo (s)
+    next_expected_at: float | None = None  # last_seen_at + refresh_rate – kdy čekáme další probuzení
 
 
 @dataclass(frozen=True)
@@ -32,6 +41,7 @@ class PolicyConfig:
     max_partial_area: float = 0.4
     align_minutes: int = 5              # 0 = vypnuto; jinak probouzet v násobcích N minut (:00, :05, …)
     align_lead_s: int = 10              # předstih na probuzení + Wi-Fi, aby obrazovka byla hotová na hranici
+    offline_tolerance_s: int = 600      # zařízení je „neaktivní“ až po next_expected_at + tolerance (deep sleep ≠ výpadek)
 
 
 @dataclass(frozen=True)

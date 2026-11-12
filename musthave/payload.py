@@ -84,15 +84,39 @@ def _truncate(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-def _section(source: dict, game_max: int) -> dict:
+def as_of(since: float | None, now: datetime) -> str | None:
+    """Čas posledního úspěšného získání dat ve stejné zóně jako `now` (HH:MM, starší než den i s datem)."""
+    if not isinstance(since, (int, float)) or since <= 0:
+        return None
+    when = datetime.fromtimestamp(since, now.tzinfo)  # tzinfo None = místní čas stroje
+    if when.date() == now.date():
+        return when.strftime("%H:%M")
+    return f"{when.day}. {when.month}. {when.strftime('%H:%M')}"
+
+
+def _stale_marks(out: dict, source: dict, now: datetime) -> dict:
+    """`since` (timestamp) → `as_of` (text pro obrazovku); timestamp do payloadu nepatří."""
+    out.pop("since", None)
+    if source.get("stale"):
+        out["stale"] = True
+        stamp = as_of(source.get("since"), now)
+        if stamp:
+            out["as_of"] = stamp
+    return out
+
+
+def _section(source: dict, game_max: int, now: datetime | None = None) -> dict:
     items = [dict(i) for i in sort_items(source.get("items", []))]
     for i in items:
         if "g" in i:
             i["g"] = _truncate(i["g"], game_max)
     out = {"ok": bool(source.get("ok")), "items": items, "live": sum(1 for i in items if i.get("live"))}
-    for flag in ("fallback", "stale"):  # fallback = decapi místo GQL; stale = poslední dobrá data po výpadku
-        if source.get(flag):
-            out[flag] = True
+    if source.get("fallback"):  # fallback = decapi místo GQL
+        out["fallback"] = True
+    if source.get("stale"):  # stale = poslední dobrá data po výpadku
+        out["stale"] = True
+        if now is not None:
+            _stale_marks(out, source, now)
     return out
 
 
@@ -108,9 +132,9 @@ def build_payload(
             "host": host,
             "fw": fw,
             "battery_percent": battery_percent(battery_voltage),
-            "weather": copy.deepcopy(weather),
-            "kick": _section(kick, game_max),
-            "twitch": _section(twitch, game_max),
+            "weather": _stale_marks(copy.deepcopy(weather), weather, now),
+            "kick": _section(kick, game_max, now),
+            "twitch": _section(twitch, game_max, now),
             "countdowns": countdown_items(countdowns, now),
         }
         if len(encode(payload)) <= MAX_BYTES:

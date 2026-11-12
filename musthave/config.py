@@ -167,6 +167,7 @@ def load_settings(
             max_partial_area=float(server.get("max_partial_area", 0.4)),
             align_minutes=int(server.get("align_minutes", 5)),
             align_lead_s=int(server.get("align_lead_seconds", 10)),
+            offline_tolerance_s=int(server.get("offline_tolerance_seconds", 600)),
         ),
         firmware_dir=root / "deploy" / "firmware",
         label=str(server.get("label", "")),

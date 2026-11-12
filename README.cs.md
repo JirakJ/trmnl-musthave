@@ -117,6 +117,25 @@ USB, deep na baterii, podle hlášeného napětí), `refresh_rate`, kdy udělat 
 `firmware_version.txt` liší od verze zařízení. Stock firmware proti stejnému serveru dál funguje (jde vždy cestou `full`).
 Detaily: `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Stránka stavu (`/status`, `/status.json`)
+
+BYOS server ukazuje čitelný přehled na `http://<host>:<port>/status` (JSON na `/status.json`):
+
+- **snímky**: poslední *vyrenderovaný* snímek (render smyčka), snímek *nabídnutý* každému zařízení (odeslaný
+  v odpovědi `partial`/`full`) a snímek *potvrzený* firmwarem. Potvrzení vzniká, až když další dotaz zařízení nese
+  daný snímek v `X-Frame-Id`; odeslaná odpověď potvrzením není. Stock firmware `X-Frame-Id` neposílá, jeho snímky
+  proto zůstávají nepotvrzené.
+- **zařízení**: poslední kontakt, interval, který skutečně dostalo (`refresh_rate`), a očekávaný další kontakt,
+  firmware, odhad baterie a Wi-Fi. Po očekávaném probuzení je zařízení `opožděné`, `neaktivní` až po další
+  toleranci `[server] offline_tolerance_seconds` (výchozí 600 s), takže deep sleep nevyvolá falešný výpadek.
+- **Wi-Fi**: poslední platná hlavička `RSSI` (−120…−1 dBm) a čas měření; chybějící nebo neplatná hodnota ponechá
+  předchozí měření, bez měření je stav `neznámý`. Procenta = `2 × (RSSI + 100)` oříznuto na 0–100 (−100 dBm = 0 %,
+  −50 dBm a lépe = 100 %).
+- **stáří dat**: čas posledního *úspěšného* získání dat každého zdroje, nezávisle na čase renderu. Když zdroj jede
+  ze zálohy, obrazovka ukáže `data z HH:MM` (čas získání), ne čas renderu.
+
+Stav se sleduje jen na serveru; zamrzlý snímek na e-inku netvrdí, že je displej online/offline.
+
 ## Nasazení na Raspberry Pi
 
 ```

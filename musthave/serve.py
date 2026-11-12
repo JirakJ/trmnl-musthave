@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 import time
 from datetime import datetime
@@ -27,6 +28,12 @@ from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 
 log = logging.getLogger("musthave.serve")
+
+
+def write_json_atomic(path: Path, data) -> None:
+    tmp = path.with_name(f".{path.name}.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _remember(state: State, col, sent_at: float | None = None, payload: dict | None = None) -> State:
@@ -118,6 +125,7 @@ def tick(
         log.error("storing frame failed, keeping last frame: %s", err)
         return False
     rendered_path.write_text(json.dumps(comparable, ensure_ascii=False), encoding="utf-8")
+    write_json_atomic(frames.dir / "render.json", {"frame_id": fid, "rendered_at": time.time()})
     log.info("frame %s", fid)
     return True
 
@@ -127,7 +135,8 @@ def serve(root: Path, port: int | None = None, push: bool = False, once: bool = 
     frames = FrameStore(root / "state" / "frames")
     devices = DeviceRegistry(root / "state" / "devices.json")
     srv = make_server(frames, devices, settings.policy, port=port if port is not None else settings.server_port,
-                      firmware_dir=settings.firmware_dir)
+                      firmware_dir=settings.firmware_dir,
+                      clock=lambda: datetime.now(ZoneInfo(settings.timezone)), root=root)
     threading.Thread(target=srv.serve_forever, daemon=True, name="byos-http").start()
     interval = min(settings.policy.interval_usb, settings.policy.interval_battery)
     log.info("BYOS v1 server on port %d, render every %ds, push_to_trmnl=%s", srv.server_port, interval, push)

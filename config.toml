@@ -43,6 +43,7 @@ max_partial_area = 0.4     # větší změna než 40 % plochy → plný refresh
 # Probouzení zarovnané na násobky minut (:00, :05, …); 0 = použít interval_usb/interval_battery
 align_minutes = 5
 align_lead_seconds = 10    # předstih na probuzení + Wi-Fi
+offline_tolerance_seconds = 600  # /status: „neaktivní“ až po očekávaném probuzení + tolerance
 # format = "png" (1-bit PNG) nebo "bmp" (1-bit BMP, nejstarší podporovaný formát firmware)
 format = "png"
 # chrome = "/cesta/k/chrome"   # jinak se hledá Google Chrome / Chromium automaticky
