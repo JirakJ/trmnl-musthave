@@ -117,6 +117,24 @@ USB, deep na baterii, podle hlášeného napětí), `refresh_rate`, kdy udělat 
 `firmware_version.txt` liší od verze zařízení. Stock firmware proti stejnému serveru dál funguje (jde vždy cestou `full`).
 Detaily: `docs/superpowers/specs/2026-09-16-custom-firmware-partial-refresh-design.md`.
 
+## Hodinová předpověď (příštích 6 hodin)
+
+Pod aktuálním počasím full layout ukazuje šest hodinových oken od aktuální hodiny: teplotu, pravděpodobnost srážek
+(sloupec + %) a očekávaný úhrn, plus krátké shrnutí, např. `Nejvyšší šance srážek 16–18 h (90 %) · 17,0 mm` nebo
+`Bez srážek do 15 h`. Data jsou ze stejného dotazu na Open-Meteo
+(`hourly=temperature_2m,precipitation_probability,precipitation`, `timeformat=unixtime`):
+
+- Open-Meteo hlásí srážky za *předchozí* hodinu, okno `h:00–h+1:00` proto bere teplotu z `h:00` a srážky z `h+1:00`.
+  Shrnutí jmenuje jen celé hodiny (žádná minutová přesnost).
+- Časy jsou unix timestamp převedený do nastavené časové zóny – okna správně přecházejí přes půlnoc i změnu času
+  (v říjnu dvakrát `02h`, v březnu žádná).
+- Chybějící hodnoty se ukazují jako `—`, nikdy jako nula, a shrnutí přizná `část dat chybí`.
+- Když počasí jede ze zálohy (do 3 h), okna, která už skončila, se vynechají a obrazovka ukáže `data z HH:MM`.
+- Payload pro TRMNL cloud (limit 5 kB) upravuje `fit_for_cloud()`: když by se nevešel, hodinová data se obětují
+  dřív než cokoli podstatného; lokální BYOS render limit nemá.
+
+Náhledy: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, render přes `preview/shot.py`.
+
 ## Úspora baterie (noční režim, nízké nabití)
 
 Úspora mění `refresh_rate`, který server posílá zařízení – zařízení se tedy skutečně budí méně často (samotné

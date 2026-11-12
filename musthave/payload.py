@@ -108,20 +108,65 @@ def build_payload(
     countdowns: Iterable[Countdown] = (),
     battery_voltage: float | None = None,
     saving: str | None = None,
+    max_bytes: int | None = MAX_BYTES,
 ) -> dict:
-    for game_max in (GAME_MAX, GAME_MIN):
-        payload = {
-            "updated": now.strftime("%H:%M"),
-            "date": czech_date(now),
-            "host": host,
-            "fw": fw,
-            "battery_percent": battery_percent(battery_voltage),
-            "saving": SAVING_NOTES.get(saving or ""),
-            "weather": _stale_marks(copy.deepcopy(weather), weather, now),
-            "kick": _section(kick, game_max, now),
-            "twitch": _section(twitch, game_max, now),
-            "countdowns": countdown_items(countdowns, now),
-        }
-        if len(encode(payload)) <= MAX_BYTES:
-            return payload
-    raise PayloadTooLarge(f"payload exceeds {MAX_BYTES} B even after truncation")
+    """Payload pro šablony. `max_bytes` = limit TRMNL cloudu (zkrátí/odebere volitelná data, viz fit_for_cloud);
+    None = lokální BYOS render bez limitu."""
+    payload = {
+        "updated": now.strftime("%H:%M"),
+        "date": czech_date(now),
+        "host": host,
+        "fw": fw,
+        "battery_percent": battery_percent(battery_voltage),
+        "saving": SAVING_NOTES.get(saving or ""),
+        "weather": _weather(weather, now),
+        "kick": _section(kick, GAME_MAX, now),
+        "twitch": _section(twitch, GAME_MAX, now),
+        "countdowns": countdown_items(countdowns, now),
+    }
+    return payload if max_bytes is None else fit_for_cloud(payload, max_bytes)
+
+
+def _weather(weather: dict, now: datetime) -> dict:
+    """Počasí pro payload; ze starších (stale) dat se vynechají hodinová okna, která už skončila."""
+    from .weather import rain_summary
+
+    out = _stale_marks(copy.deepcopy(weather), weather, now)
+    hours = out.get("hours")
+    if isinstance(hours, list):
+        now_ts = now.timestamp()
+        current = [h for h in hours if not isinstance(h.get("ts"), (int, float)) or h["ts"] + 3600 > now_ts]
+        if len(current) != len(hours):
+            out["hours"] = current
+            out["rain"] = rain_summary(current) if current else "Hodinová předpověď nedostupná"
+    return out
+
+
+# Co se v cloudovém payloadu (limit 5 kB) obětuje první: volitelné panely, pak hodinová předpověď.
+CLOUD_OPTIONAL = ("agenda", "reminders", "alert", ("weather", "hours"))
+
+
+def fit_for_cloud(payload: dict, max_bytes: int = MAX_BYTES) -> dict:
+    """Menší reprezentace pro TRMNL cloud: zkrátí názvy her, pak odebírá volitelná data podle CLOUD_OPTIONAL.
+
+    Lokální BYOS render limit nemá; cloud dostane kompaktní verzi (šablony s chybějícími klíči počítají)."""
+    if len(encode(payload)) <= max_bytes:
+        return payload
+    out = copy.deepcopy(payload)
+    for key in ("kick", "twitch"):
+        for item in (out.get(key) or {}).get("items", []):
+            if "g" in item:
+                item["g"] = _truncate(item["g"], GAME_MIN)
+    for key in CLOUD_OPTIONAL:
+        if len(encode(out)) <= max_bytes:
+            return out
+        if isinstance(key, tuple):
+            parent = out.get(key[0])
+            if isinstance(parent, dict) and key[1] in parent:
+                parent.pop(key[1])
+                parent.pop("rain", None)
+        else:
+            out.pop(key, None)
+    if len(encode(out)) <= max_bytes:
+        return out
+    raise PayloadTooLarge(f"payload exceeds {max_bytes} B even after truncation")
