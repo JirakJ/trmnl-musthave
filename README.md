@@ -414,10 +414,11 @@ rollback, because a sleeping display is not a failed deployment. The summary is 
 
 ```
 musthave/   config, http, weather, kick, twitch, payload, state, trmnl (push clients), run,
+            alerts (ČHMÚ CAP), ics + agenda, reminders, streams, layout, status, admin + tomlw,
             screen (render) + frames + diff + policy + devices + server + serve (BYOS v1), __main__
 templates/  full / half_horizontal / half_vertical / quadrant .liquid
-preview/    render.py, sample.json (real payload), screenshots
-deploy/     systemd units + timer, install.sh, push_plugin.sh, launchd plists, BYOS server unit
+preview/    render.py, shot.py (1-bit device render), make_scenarios.py → scenarios/*.json, sample.json
+deploy/     systemd units + timer, install.sh, deploy_server.py, push_plugin.sh, launchd plists, BYOS server unit
 tests/      pytest with fixtures captured from the real APIs
 docs/superpowers/  design spec and implementation plan (Czech)
 ```

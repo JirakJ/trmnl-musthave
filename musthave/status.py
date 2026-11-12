@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from . import __version__
 from .policy import DeviceState, PolicyConfig, battery_percent, plausible_voltage
 
 SAVING_LABELS = {"none": "běžný", "quiet": "doba klidu", "low": "úspora baterie", "quiet+low": "doba klidu + úspora baterie"}
@@ -138,6 +139,7 @@ def build_status(frames, devices, cfg: PolicyConfig, now_ts: float, root: Path |
     rendered_at = render.get("rendered_at") if isinstance(render, dict) and render.get("frame_id") == latest else None
     with_ids = sorted(devices.items(), key=lambda kv: -(kv[1].last_seen_at or 0))
     return {
+        "version": __version__,
         "now": _iso(now_ts, tz),
         "frame_rendered": latest,
         "frame_rendered_at": _iso(rendered_at, tz),
@@ -203,7 +205,7 @@ def render_html(status: dict[str, Any]) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>body{{font-family:system-ui,sans-serif;margin:16px;max-width:860px}}table{{border-collapse:collapse;margin:6px 0 14px}}
 td,th{{text-align:left;padding:3px 10px 3px 0;vertical-align:top}}img{{max-width:100%;height:auto;border:1px solid #888}}</style></head>
-<body><h1>TRMNL Must-have BYOS v1</h1>
+<body><h1>TRMNL Must-have BYOS v1 · {html.escape(__version__)}</h1>
 <p>Vyrenderovaný snímek: <b>{e(latest)}</b> ({e(_short(status.get('frame_rendered_at')))}) · nabízený firmware: {e(status.get('firmware_offered'))}
 · <a href="/status.json">JSON</a> · <a href="/admin">správa</a></p>
 <h2>Data (poslední úspěšné získání)</h2><table>{''.join(rows)}</table>
