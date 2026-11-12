@@ -378,10 +378,37 @@ The status is server-side only; the frozen e-ink frame never claims the display 
 
 ## Deploying to a Raspberry Pi
 
+Collector host (cloud push via timer):
+
 ```
 deploy/install.sh [ssh-host]      # rsync to ~/trmnl-musthave + systemd timer (5 min); copies .env if present
 ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ```
+
+`install.sh` refuses to run on a host where the BYOS server service is enabled (it would turn on the collector
+timer); override with `FORCE_COLLECTOR=1` only if you really want both.
+
+BYOS server update (one command, backup and verification):
+
+```
+deploy/deploy_server.py deploy v1.7.0 --dry-run      # plan only: commit, files, target checks
+deploy/deploy_server.py deploy v1.7.0                # deploy, verify, wait for the device to confirm
+deploy/deploy_server.py rollback v1.7.0              # restore the code that ran before v1.7.0
+```
+
+`deploy` takes the exact commit of the tag, builds the archive with `git archive` (only tracked files, so no
+secrets, state or virtualenv; the archive is checked for protected paths) and a SHA-256 manifest, uploads both to
+`state/deployments/<tag>/` and backs up the running code (`before-<tag>.tar.gz`, kept on repeated runs). It then
+rsyncs the new code into place while never touching `config.local.toml(.bak)`, `.env`, `.venv`, `state/` (device
+registry, frames, caches, admin token), `deploy/firmware/*.bin` and `ota_wait`; dependencies are reinstalled only when
+`requirements-server.txt` changed, and no collector timer is ever enabled. After restarting
+`trmnl-musthave-server@<user>` it verifies that the deployed files match the manifest, the service is active, a
+render finished after the restart without errors and the current frame is a valid 1-bit 800×480 PNG; any failure
+restores the backup and restarts the service. It reports separately the server activation, the frame offered to the
+device and the firmware confirmation via `X-Frame-Id`; the wait is bounded by the device's scheduled wake-up plus
+10 minutes (max 2 h, `--ack-timeout`, `--no-wait`). No confirmation ends as `nasazeno, zařízení nepotvrdilo` without a
+rollback, because a sleeping display is not a failed deployment. The summary is written to
+`state/deployments/<tag>/result.json`.
 
 ## Layout
 

@@ -360,10 +360,35 @@ Stav se sleduje jen na serveru; zamrzlý snímek na e-inku netvrdí, že je disp
 
 ## Nasazení na Raspberry Pi
 
+Host se sběračem (push do cloudu přes timer):
+
 ```
 deploy/install.sh [ssh-host]      # rsync do ~/trmnl-musthave + systemd timer (5 min); .env se zkopíruje, pokud existuje
 ssh rpi journalctl -u 'trmnl-musthave@*' -n 20
 ```
+
+`install.sh` odmítne běžet na hostu, kde je zapnutá služba BYOS serveru (zapnul by sběrač přes timer); obejít to
+jde jen vědomě přes `FORCE_COLLECTOR=1`.
+
+Aktualizace BYOS serveru (jeden příkaz, záloha a ověření):
+
+```
+deploy/deploy_server.py deploy v1.7.0 --dry-run      # jen plán: commit, soubory, kontroly cíle
+deploy/deploy_server.py deploy v1.7.0                # nasadit, ověřit, počkat na potvrzení zařízením
+deploy/deploy_server.py rollback v1.7.0              # vrátit kód, který běžel před v1.7.0
+```
+
+`deploy` vezme přesný commit tagu, sestaví archiv přes `git archive` (jen soubory z Gitu, tedy žádná tajemství,
+stav ani virtualenv; archiv se kontroluje na chráněné cesty) a manifest se SHA-256, nahraje je do
+`state/deployments/<tag>/` a zazálohuje běžící kód (`before-<tag>.tar.gz`, při opakování se nepřepíše). Potom
+rsyncem nasadí nový kód a nikdy nesáhne na `config.local.toml(.bak)`, `.env`, `.venv`, `state/` (registr zařízení,
+snímky, cache, admin token), `deploy/firmware/*.bin` a `ota_wait`; závislosti se instalují jen při změně
+`requirements-server.txt` a žádný timer sběrače se nezapne. Po restartu `trmnl-musthave-server@<user>` ověří, že
+nasazené soubory odpovídají manifestu, služba běží, po restartu proběhl render bez chyby a aktuální snímek je platné
+1-bit PNG 800×480; jakékoli selhání vrátí zálohu a restartuje službu. Zvlášť vykáže aktivaci serveru, nabídnutí
+snímku zařízení a potvrzení firmwarem přes `X-Frame-Id`; čekání je omezené naplánovaným probuzením zařízení
++ 10 minut (max. 2 h, `--ack-timeout`, `--no-wait`). Nepotvrzení skončí stavem `nasazeno, zařízení nepotvrdilo` bez
+rollbacku – spící displej není chyba nasazení. Shrnutí se uloží do `state/deployments/<tag>/result.json`.
 
 ## Struktura
 
