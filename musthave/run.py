@@ -21,6 +21,7 @@ from .sources import all_down, with_last_good
 from .state import State, load_state, save_state, should_send
 from .trmnl import send_data, send_webhook
 from .twitch import DEFAULT_CLIENT_ID, fetch_twitch
+from .alerts import alert_strip, fetch_alerts
 from .weather import fetch_weather, with_fallback
 
 log = logging.getLogger("musthave")
@@ -33,6 +34,7 @@ class Collected:
     last_kick: dict | None
     last_twitch: dict | None
     all_down: bool              # žádný zdroj nemá čerstvá data (výpadek sítě) → obrazovku neměnit
+    sources: dict | None = None  # záznamy dalších zdrojů (alerts, agenda) k uložení do State.sources
 
     def __iter__(self):  # zpětná kompatibilita: `payload, last_weather = collect(...)`
         return iter((self.payload, self.last_weather))
@@ -41,25 +43,37 @@ class Collected:
 def collect(http, settings: Settings, now: datetime, last_weather: dict | None = None, fw: str = "",
             last_kick: dict | None = None, last_twitch: dict | None = None,
             battery_voltage: float | None = None, saving: str | None = None,
-            max_bytes: int | None = MAX_BYTES) -> Collected:
+            max_bytes: int | None = MAX_BYTES, last_sources: dict | None = None) -> Collected:
     """Paralelně stáhne všechny zdroje a poskládá payload.
 
     Twitch Client-ID se při 400 obnoví za běhu. Když zdroj selže, ukáže se jeho poslední dobrý stav označený
-    „stale“ (počasí ≤ 3 h, streamy ≤ 30 min); teprve potom „nedostupné“."""
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    „stale“ (počasí ≤ 3 h, streamy ≤ 30 min); teprve potom „nedostupné“. Volitelné zdroje (výstrahy ČHMÚ, …)
+    mají vlastní cache v `last_sources` a nikdy neshodí běh."""
+    ts = now.timestamp()
+    last_sources = dict(last_sources or {})
+    with ThreadPoolExecutor(max_workers=4) as pool:
         weather_f = pool.submit(fetch_weather, http, settings, now)
         kick_f = pool.submit(fetch_kick, http, settings.kick)
         twitch_f = pool.submit(fetch_twitch, http, settings.twitch, DEFAULT_CLIENT_ID)
+        alerts_f = (pool.submit(fetch_alerts, http, settings.alerts, last_sources.get("alerts"), ts)
+                    if settings.alerts.enabled else None)
         weather, kick = weather_f.result(), kick_f.result()
         twitch, _ = twitch_f.result()
-    ts = now.timestamp()
+        alerts_state = None
+        if alerts_f is not None:
+            alerts_state, last_sources["alerts"] = alerts_f.result()
     weather, rem_weather = with_fallback(weather, last_weather, ts)
     kick, rem_kick = with_last_good("kick", kick, last_kick, ts)
     twitch, rem_twitch = with_last_good("twitch", twitch, last_twitch, ts)
     host = settings.label or socket.gethostname().split(".")[0]
+    extras = {}
+    if alerts_state is not None:
+        extras["alert"] = alert_strip(alerts_state, now, settings.alerts)
     payload = build_payload(weather, kick, twitch, now, host=host, fw=fw, countdowns=settings.countdowns,
-                            battery_voltage=battery_voltage, saving=saving, max_bytes=max_bytes)
-    return Collected(payload, rem_weather, rem_kick, rem_twitch, all_down(weather, kick, twitch))
+                            battery_voltage=battery_voltage, saving=saving, max_bytes=max_bytes,
+                            location=settings.location_name, extras=extras)
+    return Collected(payload, rem_weather, rem_kick, rem_twitch, all_down(weather, kick, twitch),
+                     last_sources or None)
 
 
 def run(
@@ -86,7 +100,8 @@ def run(
         return 2
 
     try:
-        col = collect(http, settings, now, state.last_weather, last_kick=state.last_kick, last_twitch=state.last_twitch)
+        col = collect(http, settings, now, state.last_weather, last_kick=state.last_kick, last_twitch=state.last_twitch,
+                      last_sources=state.sources)
     except PayloadTooLarge as err:
         print(f"payload too large: {err}", file=sys.stderr)
         return 1
@@ -102,7 +117,8 @@ def run(
     send, reason = should_send(state, payload, now.timestamp(), settings.min_interval_s, settings.heartbeat_s)
     if not send:
         log.info("skip (%s)", reason)
-        remembered = State(state.last_sent_at, state.last_payload, col.last_weather, col.last_kick, col.last_twitch)
+        remembered = State(state.last_sent_at, state.last_payload, col.last_weather, col.last_kick, col.last_twitch,
+                           col.sources)
         if remembered != state:
             save_state(settings.state_path, remembered)
         return 0
@@ -118,6 +134,6 @@ def run(
         log.error("webhook failed %s: %s", status, text[:200])
         return 1
     save_state(settings.state_path, State(last_sent_at=now.timestamp(), last_payload=payload, last_weather=col.last_weather,
-                                          last_kick=col.last_kick, last_twitch=col.last_twitch))
+                                          last_kick=col.last_kick, last_twitch=col.last_twitch, sources=col.sources))
     log.info("sent (%s) %d B", reason, size)
     return 0

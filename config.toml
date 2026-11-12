@@ -6,6 +6,17 @@ latitude = 49.3961
 longitude = 15.5912
 timezone = "Europe/Prague"
 
+[alerts]
+# Výstrahy ČHMÚ (veřejný CAP feed, bez klíče). area_codes = kódy ORP z číselníku ČSÚ 65 (CISORP), Jihlava = 6105.
+# Prázdný seznam = funkce vypnutá. Pruh se ukáže jen při platné/blížící se výstraze (show_none = true ukáže i „bez výstrahy“)
+# a při nedostupnosti zdroje; cache platí max_age_hours.
+area_codes = ["6105"]
+feeds = ["50"]            # 50 = meteorologické výstrahy SIVS, 70 = hydrologické sucho
+refresh_minutes = 15
+max_age_hours = 6
+horizon_hours = 24
+show_none = false
+
 [streams]
 # Kick slugs (část URL za kick.com/)
 kick = ["fattypillow", "czechfather", "astatoro", "miken", "czechcloud"]

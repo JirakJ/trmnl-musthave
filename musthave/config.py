@@ -11,6 +11,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Mapping
 
+from .alerts import AlertsConfig
 from .policy import PolicyConfig
 
 KEYCHAIN_SERVICE = "trmnl-musthave"
@@ -75,6 +76,7 @@ class Settings:
     label: str = ""   # zdroj zobrazený na obrazovce (RPi / MacBook); prázdné = hostname
     headless: str = "auto"  # auto | new | old – režim headless Chromia (RPi s Chromium 126 potřebuje old)
     countdowns: tuple[Countdown, ...] = ()  # [[countdown]] – odpočty dnů do událostí
+    alerts: AlertsConfig = AlertsConfig()   # [alerts] – výstrahy ČHMÚ (vypnuto, dokud není nastavena oblast)
 
 
 class ConfigError(ValueError):
@@ -206,4 +208,32 @@ def load_settings(
         label=str(server.get("label", "")),
         headless=str(server.get("headless", "auto")),
         countdowns=parse_countdowns(raw.get("countdown", [])),
+        alerts=parse_alerts(raw.get("alerts", {})),
+    )
+
+
+def parse_alerts(raw: dict) -> AlertsConfig:
+    """[alerts]: area_codes = CISORP kódy ORP (číselník ČSÚ 65, Jihlava = "6105"); bez oblasti je funkce vypnutá."""
+    if not isinstance(raw, dict):
+        raise ConfigError("[alerts] musí být tabulka")
+    codes = raw.get("area_codes", [])
+    if isinstance(codes, (str, int)):
+        codes = [codes]
+    clean = []
+    for code in codes:
+        text = str(code).strip()
+        if not text.isdigit() or len(text) != 4:
+            raise ConfigError(f"[alerts] area_codes: {code!r} není čtyřmístný kód ORP (CISORP)")
+        clean.append(text)
+    feeds = tuple(str(f).strip() for f in raw.get("feeds", ["50"]))
+    for feed in feeds:
+        if feed not in ("50", "70"):
+            raise ConfigError(f"[alerts] feeds: {feed!r}, povolené 50 (SIVS) a 70 (sucho)")
+    enabled = bool(raw.get("enabled", True)) and bool(clean)
+    return AlertsConfig(
+        enabled=enabled, area_codes=tuple(clean), feeds=feeds or ("50",),
+        refresh_minutes=max(5, int(raw.get("refresh_minutes", 15))),
+        max_age_hours=max(1, int(raw.get("max_age_hours", 6))),
+        horizon_hours=max(0, int(raw.get("horizon_hours", 24))),
+        show_none=bool(raw.get("show_none", False)),
     )

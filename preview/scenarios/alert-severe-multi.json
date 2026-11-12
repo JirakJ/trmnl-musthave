@@ -1,0 +1,196 @@
+{
+ "updated": "14:05",
+ "date": "Středa 16. 9. 2026",
+ "host": "RPi",
+ "fw": "2.0.9",
+ "battery_percent": 67,
+ "weather": {
+  "ok": true,
+  "temp": 22.6,
+  "feels": 22.0,
+  "hum": 60,
+  "wind": 14,
+  "code": 3,
+  "label": "Zataženo",
+  "days": [
+   {
+    "d": "St",
+    "hi": 24,
+    "lo": 10,
+    "p": 100,
+    "code": 96,
+    "label": "Bouřka"
+   },
+   {
+    "d": "Čt",
+    "hi": 19,
+    "lo": 12,
+    "p": 100,
+    "code": 80,
+    "label": "Přeháňky"
+   },
+   {
+    "d": "Pá",
+    "hi": 20,
+    "lo": 8,
+    "p": 3,
+    "code": 3,
+    "label": "Zataženo"
+   }
+  ],
+  "hours": [
+   {
+    "ts": 1782907200,
+    "h": "14",
+    "t": 24,
+    "p": 10,
+    "mm": 0.0
+   },
+   {
+    "ts": 1782910800,
+    "h": "15",
+    "t": 23,
+    "p": 60,
+    "mm": 2.5
+   },
+   {
+    "ts": 1782914400,
+    "h": "16",
+    "t": 19,
+    "p": 90,
+    "mm": 18.0
+   },
+   {
+    "ts": 1782918000,
+    "h": "17",
+    "t": 17,
+    "p": 85,
+    "mm": 6.1
+   },
+   {
+    "ts": 1782921600,
+    "h": "18",
+    "t": 17,
+    "p": 40,
+    "mm": 0.4
+   },
+   {
+    "ts": 1782925200,
+    "h": "19",
+    "t": 18,
+    "p": 10,
+    "mm": 0.0
+   }
+  ],
+  "rain": "Nejvyšší šance srážek 16–18 h (90 %) · 27,0 mm"
+ },
+ "kick": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Astatoro",
+    "live": true,
+    "v": 1387,
+    "g": "Valheim",
+    "s": "14:17"
+   },
+   {
+    "n": "Miken",
+    "live": true,
+    "v": 1340,
+    "g": "Valheim",
+    "s": "14:08"
+   },
+   {
+    "n": "CzechCloud",
+    "live": true,
+    "v": 1047,
+    "g": "Politics",
+    "s": "16:05"
+   },
+   {
+    "n": "FATTYPILLOW",
+    "live": false
+   },
+   {
+    "n": "CzechFather",
+    "live": false
+   }
+  ],
+  "live": 3
+ },
+ "twitch": {
+  "ok": true,
+  "items": [
+   {
+    "n": "Rob2628",
+    "live": true,
+    "v": 5171,
+    "g": "Diablo IV",
+    "s": "15:36"
+   },
+   {
+    "n": "Cruelladk",
+    "live": true,
+    "v": 759,
+    "g": "World of Warcraft",
+    "s": "14:57"
+   },
+   {
+    "n": "ArcadeBulls",
+    "live": true,
+    "v": 580,
+    "g": "Just Chatting",
+    "s": "16:01"
+   },
+   {
+    "n": "Conducteir77",
+    "live": true,
+    "v": 473,
+    "g": "WARDOGS",
+    "s": "00:15"
+   },
+   {
+    "n": "OliverovyKecy",
+    "live": true,
+    "v": 129,
+    "g": "Just Chatting",
+    "s": "14:59"
+   },
+   {
+    "n": "Agraelus",
+    "live": false
+   },
+   {
+    "n": "Artemis",
+    "live": false
+   }
+  ],
+  "live": 5
+ },
+ "countdowns": [
+  {
+   "n": "WoW Forever",
+   "days": 48,
+   "label": "48 dní",
+   "d": "4. 11."
+  },
+  {
+   "n": "GTA VI",
+   "days": 63,
+   "label": "63 dní",
+   "d": "19. 11."
+  }
+ ],
+ "alert": {
+  "ok": true,
+  "count": 3,
+  "src": "ČHMÚ",
+  "sent": "10:34",
+  "level": 3,
+  "label": "vysoký stupeň",
+  "event": "Velmi kluzké povrchy",
+  "valid": "od zítra 3:00 do zítra 10:00"
+ },
+ "location": "Jihlava"
+}

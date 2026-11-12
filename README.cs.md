@@ -135,6 +135,33 @@ Pod aktuálním počasím full layout ukazuje šest hodinových oken od aktuáln
 
 Náhledy: `preview/scenarios/hourly-{dry,heavy,missing,midnight}.json`, render přes `preview/shot.py`.
 
+## Výstrahy ČHMÚ
+
+Volitelný pruh pod hlavičkou ukazuje nejzávažnější platnou nebo blížící se výstrahu ČHMÚ pro nastavenou oblast:
+stupeň (`nízký` / `vysoký` / `extrémní stupeň`; vyšší stupně jsou inverzně černé, takže jsou čitelné bez barev),
+jev, platnost, `+N další` při více výstrahách, zdroj a čas vydání. Jde o informativní doplněk k oficiálním výstrahám.
+
+```toml
+[alerts]
+area_codes = ["6105"]   # kódy ORP z číselníku ČSÚ 65 (CISORP); Jihlava = 6105; prázdné = vypnuto
+feeds = ["50"]          # 50 = meteorologické výstrahy (SIVS), 70 = hydrologické sucho
+refresh_minutes = 15    # jak často kontrolovat adresář; nový XML se stahuje jen při změně souboru
+max_age_hours = 6       # cache starší než tohle → „Výstrahy ČHMÚ nedostupné“
+horizon_hours = 24      # zobrazit i výstrahy začínající do této doby
+show_none = false       # true = ukázat i „Bez platné výstrahy“
+```
+
+Jak se zdroj používá (ověřeno 11/2026 na <https://opendata.chmi.cz/meteorology/weather/alerts/cap/> a v
+`metadata/Dokumentace_CAP.pdf`): každý `alert_cap_50_DDHHMM.xml` je kompletní stav SIVS pro celé ČR; jména se
+po měsíci recyklují, proto se nejnovější soubor vybírá podle času v adresáři, ověřuje podle `<sent>` a starší zpráva
+nikdy nepřepíše novější cache. Oblast se páruje přes geokódy `CISORP`; počítají se jen české bloky `<info>`
+s `awareness_level` a jistotou jinou než `Unlikely`, zprávy `Cancel`/ne-`Actual` výstrahy nenesou a výstrahy po
+`<expires>` (příp. `eventEndingTime`) zmizí i z cache. Priorita: nejvyšší stupeň → dřívější začátek → název.
+„Bez výstrahy“ (pruh skrytý nebo `Bez platné výstrahy`) se liší od „zdroj nedostupný“ (`Výstrahy ČHMÚ nedostupné`),
+takže nefunkční feed nikdy nevypadá jako ujištění. Parser omezuje velikost stažení i počet bloků a odmítá DTD/ENTITY
+(žádná expanze entit ani externí odkazy). Data: otevřená data ČHMÚ (na pruhu je uveden zdroj „ČHMÚ“; aktuální
+licenční podmínky ověř u datové sady v Národním katalogu otevřených dat).
+
 ## Úspora baterie (noční režim, nízké nabití)
 
 Úspora mění `refresh_rate`, který server posílá zařízení – zařízení se tedy skutečně budí méně často (samotné

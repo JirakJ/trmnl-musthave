@@ -109,11 +109,14 @@ def build_payload(
     battery_voltage: float | None = None,
     saving: str | None = None,
     max_bytes: int | None = MAX_BYTES,
+    location: str = "",
+    extras: dict | None = None,
 ) -> dict:
     """Payload pro šablony. `max_bytes` = limit TRMNL cloudu (zkrátí/odebere volitelná data, viz fit_for_cloud);
-    None = lokální BYOS render bez limitu."""
+    None = lokální BYOS render bez limitu. `extras` = volitelné panely (alert, agenda, …), None hodnoty se vynechají."""
     payload = {
         "updated": now.strftime("%H:%M"),
+        "location": location,
         "date": czech_date(now),
         "host": host,
         "fw": fw,
@@ -124,6 +127,7 @@ def build_payload(
         "twitch": _section(twitch, GAME_MAX, now),
         "countdowns": countdown_items(countdowns, now),
     }
+    payload.update({k: v for k, v in (extras or {}).items() if v is not None})
     return payload if max_bytes is None else fit_for_cloud(payload, max_bytes)
 
 
